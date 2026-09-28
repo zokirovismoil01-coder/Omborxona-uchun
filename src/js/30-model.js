@@ -24,7 +24,7 @@ function addItems(a, items, sign, ratio) {
 }
 function trimItems(a, n) {
   const e = Object.entries(a.items).sort((x, y) => y[1][1] - x[1][1]);
-  if (e.length > n) a.items = Object.fromEntries(e.slice(0, n));
+  if (e.length > n) a.items = e.slice(0, n).reduce((o, [k, v]) => { o[k] = v; return o; }, {});
 }
 const toMin = s => { const [h, m] = String(s || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
 function outsideHours(ts, st) {

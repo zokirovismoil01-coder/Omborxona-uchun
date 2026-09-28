@@ -182,10 +182,15 @@ function rStatus(r) {
   return [r.cust && nasiyaPart(r.pays) ? 'Nasiya' : 'To‘langan', r.cust && nasiyaPart(r.pays) ? 'vio' : 'ok'];
 }
 const paysText = pays => (pays || []).map(p => mname(p.m) + ((pays || []).length > 1 ? ' ' + fmt(p.a) : '')).join(', ');
+/* do'kon nomi biznes nomi bilan bir xil bo'lsa, chekda bir marta yoziladi */
+function storeLine(st) {
+  const shop = S.cfg ? S.cfg.main.shop.name : '';
+  return st.name && norm(st.name) !== norm(shop) ? st.name : '';
+}
 function paperHTML(r) {
-  const st = ST(r.store) || {};
+  const st = ST(r.store) || {}, sn = storeLine(st);
   return `<div class="paper">
-    <div class="c"><b>${esc(S.cfg ? S.cfg.main.shop.name : '')}</b><br>${esc(st.name || '')}${st.address ? '<br>' + esc(st.address) : ''}</div><hr>
+    <div class="c"><b>${esc(S.cfg ? S.cfg.main.shop.name : '')}</b>${sn ? '<br>' + esc(sn) : ''}${st.address ? '<br>' + esc(st.address) : ''}</div><hr>
     <div class="row"><span>Chek</span><span>№ ${esc(r.no)}</span></div>
     <div class="row"><span>${dt(r.ts)}</span><span>${esc(dname(r.dev))}</span></div>
     <div class="row"><span>Kassir</span><span>${esc(uname(r.user))}</span></div><hr>
@@ -201,8 +206,8 @@ function paperHTML(r) {
   </div>`;
 }
 function receiptText(r) {
-  const st = ST(r.store) || {}, L = [];
-  L.push((S.cfg ? S.cfg.main.shop.name : '') + (st.name ? ', ' + st.name : ''));
+  const st = ST(r.store) || {}, L = [], sn = storeLine(st);
+  L.push((S.cfg ? S.cfg.main.shop.name : '') + (sn ? ', ' + sn : ''));
   L.push('Chek № ' + r.no + '   ' + dt(r.ts));
   L.push('Kassir: ' + uname(r.user));
   L.push('--------------------------------');
@@ -232,7 +237,7 @@ MOD.receipt = m => {
       ${mine && r.status === 'paid' && !refundAllowed(r) ? `<p class="note" style="margin-top:10px">Qaytarish muddati (${num(CFG().refundDays)} kun) o‘tgan.</p>` : ''}
       <textarea id="rtext" readonly hidden>${esc(receiptText(r))}</textarea>`,
     foot: `${canVoid ? `<button class="btn danger" data-a="voidRec" data-id="${esc(r.id)}">Bekor qilish</button>` : ''}${canRefund ? `<button class="btn" data-a="refundRec" data-id="${esc(r.id)}">Qaytarish</button>` : ''}
-      <button class="btn" data-a="copyRec">${I.copy}Nusxa olish</button>${m.fresh ? `<button class="btn pri" id="newRec" data-a="closeModal">Yangi chek</button>` : ''}` };
+      ${canPrint() ? `<button class="btn" data-a="printRec" data-id="${esc(r.id)}">${I.print}Chop etish</button>` : ''}<button class="btn" data-a="copyRec">${I.copy}Nusxa olish</button>${m.fresh ? `<button class="btn pri" id="newRec" data-a="closeModal">Yangi chek</button>` : ''}` };
 };
 
 /* ---------- Chegirma, miqdor ---------- */
@@ -511,7 +516,7 @@ MOD.z = m => {
   const sh = (S.zc && S.zc.get(m.id)) || model().shifts.get(m.id);
   if (!sh) return { title: 'Smena hisoboti', body: `<div class="empty">Smena topilmadi.</div>` };
   return { title: 'Smena hisoboti', cls: 'wide', body: zHTML(sh),
-    foot: `${S.user && S.user.role === 'admin' && sh.closed && !S.readOnly && S.dev ? `<button class="btn" data-a="corr" data-id="${esc(sh.id)}">Tuzatish kiritish</button>` : ''}<button class="btn pri" data-a="closeModal">Yopish</button>` };
+    foot: `${S.user && S.user.role === 'admin' && sh.closed && !S.readOnly && S.dev ? `<button class="btn" data-a="corr" data-id="${esc(sh.id)}">Tuzatish kiritish</button>` : ''}${canPrint() ? `<button class="btn" data-a="printZ" data-id="${esc(sh.id)}">${I.print}Chop etish</button>` : ''}<button class="btn pri" data-a="closeModal">Yopish</button>` };
 };
 MOD.corr = m => ({ title: 'Tuzatish yozuvi', focus: '#camt', enter: 'corrOk',
   body: `<p class="note">Yopilgan smena tahrirlanmaydi. Tuzatish alohida yozuv bo‘lib, farqqa qo‘shiladi va jurnalda saqlanadi.</p>

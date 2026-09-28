@@ -25,8 +25,9 @@ class Env {
     this.server = await startServer();
     this.browser = await playwright.chromium.launch({ executablePath: fs.existsSync('/opt/pw-browsers/chromium') ? undefined : undefined });
   }
-  async device(name, { level = 'owner', mock = true, viewport = { width: 1280, height: 860 }, ctxOpts = {} } = {}) {
+  async device(name, { level = 'owner', mock = true, viewport = { width: 1280, height: 860 }, ctxOpts = {}, init = [] } = {}) {
     const ctx = await this.browser.newContext(Object.assign({ viewport }, ctxOpts));
+    for (const content of init) await ctx.addInitScript({ content });
     const id = name + '#' + (++this.n);
     const d = { name, id, ctx, level, page: null };
     if (mock) {

@@ -2,10 +2,11 @@
   "name": "kassa-nazorati",
   "version": "2.0.0",
   "private": true,
-  "description": "Do'kon kassasini nazorat qilish ilovasi (claude.ai Artifact)",
+  "description": "Do'kon kassasini nazorat qilish ilovasi (claude.ai Artifact va Android APK)",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node build.mjs && node tests/e2e.cjs && node tests/e2e-extra.cjs"
+    "apk": "node android/build-apk.mjs",
+    "test": "node build.mjs && node tests/e2e.cjs && node tests/e2e-extra.cjs && node tests/e2e-android.cjs"
   },
   "devDependencies": {
     "playwright": "1.56.1"

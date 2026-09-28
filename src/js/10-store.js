@@ -20,11 +20,30 @@ function saveCritical(k, v) {
 }
 function saveSoft(k, v) { if (!LS.ok) return; if (!LS.set(k, v)) { evictCaches(1); LS.set(k, v); } }
 
+/* ============ Android ilovasi bilan bog'lanish ============
+   APK ichida window.KassaNative mavjud: ma'lumotlar telefonning SQLite bazasida saqlanadi,
+   fayllar ulashiladi, cheklar Android printeri orqali chop etiladi. */
+const NATIVE = (() => { try { return window.KassaNative || null; } catch (e) { return null; } })();
+function nat(fn, ...args) { try { return NATIVE && typeof NATIVE[fn] === 'function' ? NATIVE[fn](...args) : undefined; } catch (e) { return undefined; } }
+const hasNat = fn => !!(NATIVE && typeof NATIVE[fn] === 'function');
+
 /* ============ Mahalliy baza (umumiy baza ishlamaganda) ============
-   Umumiy baza (db) bilan bir xil interfeys: doc/collection/where/orderBy/limit/onSnapshot/acquire. */
+   Umumiy baza (db) bilan bir xil interfeys: doc/collection/where/orderBy/limit/onSnapshot/acquire.
+   APK'da hujjatlar telefonning SQLite bazasiga, brauzerda localStorage'ga yoziladi. */
 class LocalDB {
   constructor(prefix) {
     this.p = prefix; this.m = new Map(); this.subs = new Set(); this.leases = new Map();
+    this.nat = hasNat('dbLoadAll') && hasNat('dbPut') && hasNat('dbDel');
+    if (this.nat) {
+      /* telefon bazasini o'qib bo'lmasa, ilova bo'sh deb hisoblamaydi: aks holda yangi sozlash eski ma'lumot ustiga yozadi */
+      try {
+        const raw = NATIVE.dbLoadAll();
+        if (typeof raw !== 'string' || !raw) throw new Error('dbLoadAll');
+        const all = JSON.parse(raw);
+        for (const k in all) { try { this.m.set(k, JSON.parse(all[k])); } catch (e) { } }
+      } catch (e) { this.loadErr = true; }
+      return;
+    }
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -35,14 +54,23 @@ class LocalDB {
   doc(path) { return new LocalDocRef(this, String(path)); }
   collection(path) { return new LocalQuery(this, String(path), [], null, 0); }
   _put(path, data) {
+    if (this.loadErr) throw { code: 'unavailable', message: 'device database not loaded' };
     const json = JSON.stringify(data);
     if (json.length > 250000) throw { code: 'invalid_argument', message: 'document too large' };
-    try { localStorage.setItem(this.p + path, json); }
-    catch (e) { if (LS.ok) throw { code: 'quota_exceeded', message: 'local storage full' }; }
+    if (this.nat) { if (!NATIVE.dbPut(path, json)) throw { code: 'quota_exceeded', message: 'device storage full' }; }
+    else {
+      try { localStorage.setItem(this.p + path, json); }
+      catch (e) { if (LS.ok) throw { code: 'quota_exceeded', message: 'local storage full' }; }
+    }
     this.m.set(path, JSON.parse(json));
     this._notify();
   }
-  _del(path) { try { localStorage.removeItem(this.p + path); } catch (e) { } this.m.delete(path); this._notify(); }
+  _del(path) {
+    if (this.loadErr) return;
+    if (this.nat) { try { NATIVE.dbDel(path); } catch (e) { } }
+    else { try { localStorage.removeItem(this.p + path); } catch (e) { } }
+    this.m.delete(path); this._notify();
+  }
   _notify() { clearTimeout(this._t); this._t = setTimeout(() => { for (const s of [...this.subs]) s.fire(); }, 0); }
   _docsIn(coll) {
     const pre = coll + '/', out = [];
@@ -65,7 +93,7 @@ class LocalDocRef {
   }
   onSnapshot(next) {
     const db = this.db, path = this.path; let last;
-    const sub = { fire: () => { const v = db.m.get(path), j = JSON.stringify(v ?? null); if (j === last) return; last = j; try { next(ldSnap(this.id, v)); } catch (e) { console.error(e); } } };
+    const sub = { fire: () => { const v = db.m.get(path), j = JSON.stringify(v == null ? null : v); if (j === last) return; last = j; try { next(ldSnap(this.id, v)); } catch (e) { console.error(e); } } };
     db.subs.add(sub); setTimeout(() => sub.fire(), 0);
     return () => db.subs.delete(sub);
   }

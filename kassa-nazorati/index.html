@@ -452,13 +452,13 @@ pre.csvprev{margin:0;max-height:180px;overflow:auto;background:var(--surface-2);
 /* ---- 00-util.js ---- */
 /* ============ Yordamchi funksiyalar ============ */
 const $ = (s, r = document) => r.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = v => {
   if (typeof v === 'number') return isFinite(v) ? v : 0;
-  const n = parseInt(String(v ?? '').replace(/[^\d-]/g, ''), 10);
+  const n = parseInt(String(v == null ? '' : v).replace(/[^\d-]/g, ''), 10);
   return isFinite(n) ? n : 0;
 };
-const qnum = v => { const n = parseFloat(String(v ?? '').replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+const qnum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
 const r3 = x => Math.round((+x || 0) * 1000) / 1000;
 const SOM = 'so‘m';
 const fmt = n => {
@@ -590,7 +590,7 @@ function ean13(d12) { let s = 0; for (let i = 0; i < 12; i++) s += (+d12[i]) * (
 /* CSV (Excel uchun ; ajratgich va BOM) */
 const csvCell = v => {
   if (typeof v === 'number') return String(v);
-  v = String(v ?? '');
+  v = String(v == null ? '' : v);
   if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; /* Excel formulasi sifatida bajarilmasin */
   return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
 };
@@ -619,11 +619,30 @@ function saveCritical(k, v) {
 }
 function saveSoft(k, v) { if (!LS.ok) return; if (!LS.set(k, v)) { evictCaches(1); LS.set(k, v); } }
 
+/* ============ Android ilovasi bilan bog'lanish ============
+   APK ichida window.KassaNative mavjud: ma'lumotlar telefonning SQLite bazasida saqlanadi,
+   fayllar ulashiladi, cheklar Android printeri orqali chop etiladi. */
+const NATIVE = (() => { try { return window.KassaNative || null; } catch (e) { return null; } })();
+function nat(fn, ...args) { try { return NATIVE && typeof NATIVE[fn] === 'function' ? NATIVE[fn](...args) : undefined; } catch (e) { return undefined; } }
+const hasNat = fn => !!(NATIVE && typeof NATIVE[fn] === 'function');
+
 /* ============ Mahalliy baza (umumiy baza ishlamaganda) ============
-   Umumiy baza (db) bilan bir xil interfeys: doc/collection/where/orderBy/limit/onSnapshot/acquire. */
+   Umumiy baza (db) bilan bir xil interfeys: doc/collection/where/orderBy/limit/onSnapshot/acquire.
+   APK'da hujjatlar telefonning SQLite bazasiga, brauzerda localStorage'ga yoziladi. */
 class LocalDB {
   constructor(prefix) {
     this.p = prefix; this.m = new Map(); this.subs = new Set(); this.leases = new Map();
+    this.nat = hasNat('dbLoadAll') && hasNat('dbPut') && hasNat('dbDel');
+    if (this.nat) {
+      /* telefon bazasini o'qib bo'lmasa, ilova bo'sh deb hisoblamaydi: aks holda yangi sozlash eski ma'lumot ustiga yozadi */
+      try {
+        const raw = NATIVE.dbLoadAll();
+        if (typeof raw !== 'string' || !raw) throw new Error('dbLoadAll');
+        const all = JSON.parse(raw);
+        for (const k in all) { try { this.m.set(k, JSON.parse(all[k])); } catch (e) { } }
+      } catch (e) { this.loadErr = true; }
+      return;
+    }
     try {
       for (let i = 0; i < localStorage.length; i++) {
         const k = localStorage.key(i);
@@ -634,14 +653,23 @@ class LocalDB {
   doc(path) { return new LocalDocRef(this, String(path)); }
   collection(path) { return new LocalQuery(this, String(path), [], null, 0); }
   _put(path, data) {
+    if (this.loadErr) throw { code: 'unavailable', message: 'device database not loaded' };
     const json = JSON.stringify(data);
     if (json.length > 250000) throw { code: 'invalid_argument', message: 'document too large' };
-    try { localStorage.setItem(this.p + path, json); }
-    catch (e) { if (LS.ok) throw { code: 'quota_exceeded', message: 'local storage full' }; }
+    if (this.nat) { if (!NATIVE.dbPut(path, json)) throw { code: 'quota_exceeded', message: 'device storage full' }; }
+    else {
+      try { localStorage.setItem(this.p + path, json); }
+      catch (e) { if (LS.ok) throw { code: 'quota_exceeded', message: 'local storage full' }; }
+    }
     this.m.set(path, JSON.parse(json));
     this._notify();
   }
-  _del(path) { try { localStorage.removeItem(this.p + path); } catch (e) { } this.m.delete(path); this._notify(); }
+  _del(path) {
+    if (this.loadErr) return;
+    if (this.nat) { try { NATIVE.dbDel(path); } catch (e) { } }
+    else { try { localStorage.removeItem(this.p + path); } catch (e) { } }
+    this.m.delete(path); this._notify();
+  }
   _notify() { clearTimeout(this._t); this._t = setTimeout(() => { for (const s of [...this.subs]) s.fire(); }, 0); }
   _docsIn(coll) {
     const pre = coll + '/', out = [];
@@ -664,7 +692,7 @@ class LocalDocRef {
   }
   onSnapshot(next) {
     const db = this.db, path = this.path; let last;
-    const sub = { fire: () => { const v = db.m.get(path), j = JSON.stringify(v ?? null); if (j === last) return; last = j; try { next(ldSnap(this.id, v)); } catch (e) { console.error(e); } } };
+    const sub = { fire: () => { const v = db.m.get(path), j = JSON.stringify(v == null ? null : v); if (j === last) return; last = j; try { next(ldSnap(this.id, v)); } catch (e) { console.error(e); } } };
     db.subs.add(sub); setTimeout(() => sub.fire(), 0);
     return () => db.subs.delete(sub);
   }
@@ -740,7 +768,7 @@ function defaultSettings() {
   return {
     discLimit: 5, varLimit: 5000, voidAlert: 3, varStreak: 2, maxShiftH: 14, lockMin: 5,
     methods: { uzcard: true, humo: true, click: true, payme: true, nasiya: true },
-    debtLimit: 2000000, refundDays: 14, keepDays: 180,
+    debtLimit: 2000000, refundDays: 14, keepDays: 180, paper: 80,
     footer: 'Xaridingiz uchun rahmat!'
   };
 }
@@ -878,7 +906,7 @@ function debtFromEvent(e) {
 
 /* ============ Bazaga yuborish ============ */
 let pushing = false, pushTimer = null, backoff = 0, lastSumFlush = 0;
-function schedulePush(delay) { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, delay == null ? 500 : delay); }
+function schedulePush(delay) { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, delay == null ? (S.mode === 'local' ? 30 : 500) : delay); }
 const dbErrCode = err => (err && err.code) || 'unavailable';
 function handleDbErr(err, where) {
   const c = dbErrCode(err);
@@ -1223,7 +1251,7 @@ async function maintenance(force) {
   const last = num(LS.get('maint', 0));
   if (!force && Date.now() - last < 20 * 3600000) return;
   let keep = Math.max(30, num(CFG().keepDays) || 180);
-  if (S.mode === 'local') keep = Math.min(keep, 35);
+  if (S.mode === 'local' && !(S.db && S.db.nat)) keep = Math.min(keep, 35);
   const cutoff = addD(today(), -keep);
   try {
     if (S.mode === 'remote') {
@@ -1289,7 +1317,7 @@ function addItems(a, items, sign, ratio) {
 }
 function trimItems(a, n) {
   const e = Object.entries(a.items).sort((x, y) => y[1][1] - x[1][1]);
-  if (e.length > n) a.items = Object.fromEntries(e.slice(0, n));
+  if (e.length > n) a.items = e.slice(0, n).reduce((o, [k, v]) => { o[k] = v; return o; }, {});
 }
 const toMin = s => { const [h, m] = String(s || '0:0').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
 function outsideHours(ts, st) {
@@ -1626,7 +1654,10 @@ const I = {
   shield: ic('<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>'),
   alert: ic('<path d="M12 4 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.5"/>'),
   user: ic('<circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4.3-6 8-6s7 2 8 6"/>'),
-  spark: ic('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>')
+  spark: ic('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'),
+  print: ic('<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>'),
+  save: ic('<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h8V3M8 21v-7h8v7"/>'),
+  link: ic('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>')
 };
 
 /* ============ Render asoslari ============ */
@@ -1653,6 +1684,8 @@ function render() {
   S._keepScroll = false;
   restoreFocus(f);
   renderModal();
+  const kso = !!(S.dev && S.dev.type === 'cashier' && S.user);
+  if (kso !== S._kso) { S._kso = kso; nat('keepScreenOn', kso); }
 }
 let renderT = null, renderForce = false;
 function renderSoon(force) {
@@ -1681,7 +1714,7 @@ function netPill() {
   if (S.storageFull) return `<span class="pill bad" title="Qurilma xotirasi to‘lgan">Xotira to‘lgan</span>`;
   if (!S.mode) return `<span class="pill">Ulanmoqda</span>`;
   if (S.readOnly) return `<span class="pill info">Faqat ko‘rish</span>`;
-  if (S.mode === 'local') return `<span class="pill" title="Umumiy baza ulanmagan: ma’lumotlar faqat shu qurilmada">Faqat shu qurilma</span>`;
+  if (S.mode === 'local') return S.quota ? `<span class="pill bad">Xotira to‘lgan${p ? ', navbatda ' + p : ''}</span>` : `<span class="pill" title="Umumiy baza ulanmagan: ma’lumotlar faqat shu qurilmada">Faqat shu qurilma</span>`;
   if (S.revoked) return `<span class="pill bad">Baza uzildi${p ? ', navbatda ' + p : ''}</span>`;
   if (S.writeDenied) return `<span class="pill bad">Yozish rad etildi${p ? ', navbatda ' + p : ''}</span>`;
   if (S.quota) return `<span class="pill bad">Baza to‘lgan</span>`;
@@ -1693,10 +1726,11 @@ function netPill() {
 function banners() {
   const out = [];
   if (S.cfg && S.cfg.main.demo) out.push(`<div class="banner info">${I.spark}<span class="grow">Namuna ma’lumotlar bilan ishlayapsiz. Bu cheklar va smenalar haqiqiy emas.</span>${S.user && S.user.role === 'admin' && canAdminCfg() ? `<button class="btn sm" data-a="demoClear">Tozalab, o‘z do‘konimni sozlash</button>` : ''}</div>`);
-  if (S.storageFull) out.push(`<div class="banner bad">${I.alert}<span>Qurilma xotirasi to‘lgan. Yangi yozuvlar saqlanmasligi mumkin. Internetni ulang: yozuvlar yuborilgach joy bo‘shaydi.</span></div>`);
+  const localFull = `Qurilma xotirasi to‘lgan. Telefonda joy bo‘shating (keraksiz rasm, video yoki ilovalarni o‘chiring), keyin zaxira nusxa oling.`;
+  if (S.storageFull) out.push(`<div class="banner bad">${I.alert}<span>${S.mode === 'local' ? localFull : 'Qurilma xotirasi to‘lgan. Yangi yozuvlar saqlanmasligi mumkin. Internetni ulang: yozuvlar yuborilgach joy bo‘shaydi.'}</span></div>`);
   if (S.writeDenied) out.push(`<div class="banner bad">${I.alert}<span>Umumiy bazaga yozish rad etildi. Ilova egasidan sizga kamida “Contributor” yoki “Editor” huquqini berishini so‘rang. Yozuvlar shu qurilmada saqlanib turibdi.</span></div>`);
   if (S.revoked) out.push(`<div class="banner bad">${I.alert}<span>Umumiy bazaga kirish to‘xtatildi. Yozuvlar shu qurilmada saqlanib turibdi.</span></div>`);
-  if (S.quota) out.push(`<div class="banner bad">${I.alert}<span>Umumiy baza to‘lgan. Sozlamalardagi “Ma’lumotlar” bo‘limida eski yozuvlarni tozalang.</span></div>`);
+  if (S.quota && !(S.mode === 'local' && S.storageFull)) out.push(`<div class="banner bad">${I.alert}<span>${S.mode === 'local' ? localFull + ' Yozuvlar navbatda saqlanib turibdi.' : 'Umumiy baza to‘lgan. Sozlamalardagi “Ma’lumotlar” bo‘limida eski yozuvlarni tozalang.'}</span></div>`);
   if (!LS.ok) out.push(`<div class="banner">${I.alert}<span>Brauzer xotirasi yopiq. Qurilma sozlamalari sahifa yopilganda yo‘qoladi.</span></div>`);
   return out.join('');
 }
@@ -1844,8 +1878,9 @@ function vOnboard() {
     <div class="choice">
       <button class="card-choice" data-a="onbReal"><span class="ci">${I.store}</span><span><b>O‘z do‘konimni sozlash</b><span>Do‘kon nomi, ish vaqti va o‘zingizning PIN kodingiz. 2 daqiqa.</span></span></button>
       <button class="card-choice" data-a="onbDemo"><span class="ci">${I.spark}</span><span><b>Namuna bilan tanishish</b><span>Ikki do‘kon, besh xodim va bir haftalik savdo bilan tayyor ko‘rinish. Keyin bir tugma bilan tozalanadi.</span></span></button>
+      ${S.mode === 'local' ? `<button class="card-choice" data-a="restorePick"><span class="ci">${I.save}</span><span><b>Zaxiradan tiklash</b><span>Avval olingan zaxira faylidan barcha ma’lumotlarni qaytarish.</span></span></button>` : ''}
     </div>
-    ${S.mode === 'local' ? `<div class="infobox">Umumiy baza ulanmagan, shuning uchun ma’lumotlar faqat shu qurilmada saqlanadi.</div>` : ''}</div>`;
+    ${S.mode === 'local' ? `<div class="infobox">${NATIVE ? 'Ma’lumotlar shu telefon xotirasida saqlanadi va internetsiz ishlaydi. Zaxira nusxani Sozlamalar bo‘limidan olib turing.' : 'Umumiy baza ulanmagan, shuning uchun ma’lumotlar faqat shu qurilmada saqlanadi.'}</div>${restoreInput()}` : ''}</div>`;
   else if (o.step === 'demo') body = `<div class="onb"><h2>Namuna: bu qurilma</h2>
     <p class="muted">Bu qurilma nima uchun ishlatiladi? Namunada ham xuddi haqiqiydagidek ishlaydi.</p>
     <div class="seg" role="group"><button class="${o.f.type === 'monitor' ? 'on' : ''}" data-a="onbType" data-k="monitor">Egasi telefoni (nazorat)</button><button class="${o.f.type === 'cashier' ? 'on' : ''}" data-a="onbType" data-k="cashier">Kassa</button></div>
@@ -2395,10 +2430,15 @@ function rStatus(r) {
   return [r.cust && nasiyaPart(r.pays) ? 'Nasiya' : 'To‘langan', r.cust && nasiyaPart(r.pays) ? 'vio' : 'ok'];
 }
 const paysText = pays => (pays || []).map(p => mname(p.m) + ((pays || []).length > 1 ? ' ' + fmt(p.a) : '')).join(', ');
+/* do'kon nomi biznes nomi bilan bir xil bo'lsa, chekda bir marta yoziladi */
+function storeLine(st) {
+  const shop = S.cfg ? S.cfg.main.shop.name : '';
+  return st.name && norm(st.name) !== norm(shop) ? st.name : '';
+}
 function paperHTML(r) {
-  const st = ST(r.store) || {};
+  const st = ST(r.store) || {}, sn = storeLine(st);
   return `<div class="paper">
-    <div class="c"><b>${esc(S.cfg ? S.cfg.main.shop.name : '')}</b><br>${esc(st.name || '')}${st.address ? '<br>' + esc(st.address) : ''}</div><hr>
+    <div class="c"><b>${esc(S.cfg ? S.cfg.main.shop.name : '')}</b>${sn ? '<br>' + esc(sn) : ''}${st.address ? '<br>' + esc(st.address) : ''}</div><hr>
     <div class="row"><span>Chek</span><span>№ ${esc(r.no)}</span></div>
     <div class="row"><span>${dt(r.ts)}</span><span>${esc(dname(r.dev))}</span></div>
     <div class="row"><span>Kassir</span><span>${esc(uname(r.user))}</span></div><hr>
@@ -2414,8 +2454,8 @@ function paperHTML(r) {
   </div>`;
 }
 function receiptText(r) {
-  const st = ST(r.store) || {}, L = [];
-  L.push((S.cfg ? S.cfg.main.shop.name : '') + (st.name ? ', ' + st.name : ''));
+  const st = ST(r.store) || {}, L = [], sn = storeLine(st);
+  L.push((S.cfg ? S.cfg.main.shop.name : '') + (sn ? ', ' + sn : ''));
   L.push('Chek № ' + r.no + '   ' + dt(r.ts));
   L.push('Kassir: ' + uname(r.user));
   L.push('--------------------------------');
@@ -2445,7 +2485,7 @@ MOD.receipt = m => {
       ${mine && r.status === 'paid' && !refundAllowed(r) ? `<p class="note" style="margin-top:10px">Qaytarish muddati (${num(CFG().refundDays)} kun) o‘tgan.</p>` : ''}
       <textarea id="rtext" readonly hidden>${esc(receiptText(r))}</textarea>`,
     foot: `${canVoid ? `<button class="btn danger" data-a="voidRec" data-id="${esc(r.id)}">Bekor qilish</button>` : ''}${canRefund ? `<button class="btn" data-a="refundRec" data-id="${esc(r.id)}">Qaytarish</button>` : ''}
-      <button class="btn" data-a="copyRec">${I.copy}Nusxa olish</button>${m.fresh ? `<button class="btn pri" id="newRec" data-a="closeModal">Yangi chek</button>` : ''}` };
+      ${canPrint() ? `<button class="btn" data-a="printRec" data-id="${esc(r.id)}">${I.print}Chop etish</button>` : ''}<button class="btn" data-a="copyRec">${I.copy}Nusxa olish</button>${m.fresh ? `<button class="btn pri" id="newRec" data-a="closeModal">Yangi chek</button>` : ''}` };
 };
 
 /* ---------- Chegirma, miqdor ---------- */
@@ -2724,7 +2764,7 @@ MOD.z = m => {
   const sh = (S.zc && S.zc.get(m.id)) || model().shifts.get(m.id);
   if (!sh) return { title: 'Smena hisoboti', body: `<div class="empty">Smena topilmadi.</div>` };
   return { title: 'Smena hisoboti', cls: 'wide', body: zHTML(sh),
-    foot: `${S.user && S.user.role === 'admin' && sh.closed && !S.readOnly && S.dev ? `<button class="btn" data-a="corr" data-id="${esc(sh.id)}">Tuzatish kiritish</button>` : ''}<button class="btn pri" data-a="closeModal">Yopish</button>` };
+    foot: `${S.user && S.user.role === 'admin' && sh.closed && !S.readOnly && S.dev ? `<button class="btn" data-a="corr" data-id="${esc(sh.id)}">Tuzatish kiritish</button>` : ''}${canPrint() ? `<button class="btn" data-a="printZ" data-id="${esc(sh.id)}">${I.print}Chop etish</button>` : ''}<button class="btn pri" data-a="closeModal">Yopish</button>` };
 };
 MOD.corr = m => ({ title: 'Tuzatish yozuvi', focus: '#camt', enter: 'corrOk',
   body: `<p class="note">Yopilgan smena tahrirlanmaydi. Tuzatish alohida yozuv bo‘lib, farqqa qo‘shiladi va jurnalda saqlanadi.</p>
@@ -2938,6 +2978,10 @@ function reportCSV() {
   return { filename: `${name}_${S.ui.from}_${S.ui.to}.csv`, data: toCSV(rows) };
 }
 async function saveFile(file) {
+  if (hasNat('share')) {
+    const mime = /\.json$/.test(file.filename) ? 'application/json' : /\.csv$/.test(file.filename) ? 'text/csv' : 'text/plain';
+    if (nat('share', file.filename, mime, file.data)) return;
+  }
   if (S.dl) {
     try { await S.dl.save(file); toast('Fayl saqlandi'); return; }
     catch (e) { const c = e && e.code; if (c === 'declined') return; if (c !== 'unavailable' && c !== 'not_granted' && c !== 'capability_disabled' && c !== 'capability_removed') { toast('Faylni saqlab bo‘lmadi: ' + (c || 'xato'), 'bad'); return; } }
@@ -3048,7 +3092,7 @@ function parseImport(text) {
   }
   const rows = [], errors = [];
   for (let i = start; i < lines.length; i++) {
-    const c = split(lines[i]), get = k => cols[k] >= 0 ? String(c[cols[k]] ?? '').trim() : '';
+    const c = split(lines[i]), get = k => cols[k] >= 0 ? String(c[cols[k]] == null ? '' : c[cols[k]]).trim() : '';
     const name = get('name'), price = num(get('price').replace(/[.,]\d{1,2}$/, ''));
     if (!name) { errors.push(`${i + 1}-qator: nomi yo‘q`); continue; }
     if (!(price > 0)) { errors.push(`${i + 1}-qator (${name}): narx noto‘g‘ri`); continue; }
@@ -3121,7 +3165,8 @@ VIEWS.settings = function vSettings() {
       ${METHODS.filter(m => m.k !== 'cash').map(m => `<label class="check"><input type="checkbox" id="cfgm_${m.k}" data-ch="cfgM" data-k="${m.k}" ${s.methods[m.k] ? 'checked' : ''} ${ro ? 'disabled' : ''}>${m.n}${m.k === 'nasiya' ? ' (qarzga savdo, mijozlar daftari bilan)' : ''}</label>`).join('')}</section>
     <section class="sec"><h2>Biznes va chek</h2><div class="frm2">
       <label class="f">Biznes nomi<input class="inp" id="cfg_shop" data-in="cfgShop" value="${esc(c.shop)}" maxlength="60" ${ro ? 'disabled' : ''}></label>
-      <label class="f">Chek oxiridagi matn<input class="inp" id="cfg_footer" data-in="cfgT" data-f="footer" value="${esc(s.footer)}" maxlength="80" ${ro ? 'disabled' : ''}></label></div></section>
+      <label class="f">Chek oxiridagi matn<input class="inp" id="cfg_footer" data-in="cfgT" data-f="footer" value="${esc(s.footer)}" maxlength="80" ${ro ? 'disabled' : ''}></label>
+      ${canPrint() ? `<label class="f">Chek printeri eni<select class="inp" id="cfg_paper" data-ch="cfgPaper" ${ro ? 'disabled' : ''}><option value="80" ${num(s.paper) !== 58 ? 'selected' : ''}>80 mm</option><option value="58" ${num(s.paper) === 58 ? 'selected' : ''}>58 mm</option></select><small>Chek Android printer xizmati orqali chiqadi (masalan, RawBT)</small></label>` : ''}</div></section>
     <section class="sec"><h2>Do‘konlar</h2>
       ${c.stores.map((st, i) => `<div class="frm" style="grid-template-columns:1.2fr 1.4fr .6fr .6fr;margin-bottom:12px">
         <label class="f">Nomi<input class="inp" id="st_n${i}" data-in="cfgS" data-i="${i}" data-f="name" value="${esc(st.name)}" ${ro ? 'disabled' : ''}></label>
@@ -3140,7 +3185,10 @@ VIEWS.settings = function vSettings() {
       ${S.lastErr ? `<p class="note" style="margin-top:8px">Oxirgi xato: <span class="num">${esc(S.lastErr)}</span></p>` : ''}
       <div class="toolbar" style="margin-top:12px">${!ro ? `<button class="btn" data-a="maintNow">Eski yozuvlarni hozir tozalash</button>` : ''}
         ${S.dev ? `<button class="btn danger" data-a="resetDev">Shu qurilmani qayta ulash</button>` : ''}
-        ${!ro ? `<button class="btn danger" data-a="wipeAll">Barcha ma’lumotlarni o‘chirish</button>` : ''}</div></section>
+        ${!ro ? `<button class="btn danger" data-a="wipeAll">Barcha ma’lumotlarni o‘chirish</button>` : ''}</div>
+      ${S.mode === 'local' ? `<div class="infobox" style="margin-top:14px">Ma\u2019lumotlar faqat shu qurilmada saqlanadi. Zaxira nusxani muntazam olib, Telegram yoki Google Drive\u2019ga saqlang: telefon almashsa yoki ilova qayta o\u2018rnatilsa, shu fayldan tiklanadi.${LS.get('lastBackup', 0) ? ` Oxirgi zaxira: ${dt(LS.get('lastBackup', 0))}.` : ''}</div>
+      <div class="toolbar" style="margin-top:12px"><button class="btn pri" data-a="backupNow">${I.save}Zaxira nusxa olish</button>${!ro ? `<button class="btn" data-a="restorePick">${I.up}Zaxiradan tiklash</button>` : ''}${restoreInput()}</div>` : ''}
+      ${NATIVE ? `<div class="toolbar" style="margin-top:12px"><button class="btn" data-a="openOnline">${I.link}Onlayn versiyani ochish</button><span class="note">Bir nechta qurilma sinxron ishlashi kerak bo\u2018lsa, claude.ai\u2019dagi versiyadan foydalaning.</span></div>` : ''}</section>
   </div>`;
 };
 
@@ -3189,6 +3237,93 @@ VIEWS.audit = function vAudit() {
     <div class="sec" style="padding:4px 8px"><div class="tw">${list.length ? `<table class="tbl"><thead><tr><th>Vaqt</th><th>#</th><th>Xodim</th><th>Qurilma</th><th>Harakat</th><th>Tafsilot</th></tr></thead><tbody>
       ${list.slice(0, 500).map(e => { const [a, d] = evText(e); return `<tr><td class="num">${hm(e.ts)}</td><td class="num muted">${e.seq}</td><td>${esc(uname(e.user))}</td><td>${esc(dname(e.dev))}<small>${esc(sname(e.store))}</small></td><td><b>${esc(a)}</b></td><td>${esc(d)}</td></tr>`; }).join('')}</tbody></table>` : `<div class="empty">${ready ? 'Bu kunda yozuv yo‘q.' : 'Yuklanmoqda…'}</div>`}</div></div></div>`;
 };
+
+/* ---- 75-native.js ---- */
+/* ============ Android ilovasi: chop etish, zaxira nusxa, "Orqaga" tugmasi ============ */
+const ONLINE_URL = 'https://claude.ai/artifact/LKxLGRcbmwhYNs2KrGmduG';
+const canPrint = () => hasNat('print');
+
+/* Chop etish: alohida hujjat Android printeriga (Wi-Fi, Bluetooth yoki termoprinter xizmati) yuboriladi */
+function printDoc(title, inner, kind) {
+  const w = num(CFG().paper) === 58 ? 48 : 72;
+  const css = kind === 'receipt'
+    ? `@page{margin:3mm}body{margin:0;width:${w}mm;font:11.5px/1.4 "IBM Plex Mono",ui-monospace,monospace;color:#000;background:#fff}.c{text-align:center}.row{display:flex;justify-content:space-between;gap:6px}.row.big{font-size:14px;font-weight:700;margin:3px 0}hr{border:0;border-top:1px dashed #000;margin:6px 0}.it{margin-bottom:3px}.rf{font-size:10.5px}.small{font-size:9.5px;margin-top:3px}.stamp{margin:8px auto 0;border:2px solid #000;font-weight:700;text-align:center;padding:3px;width:80%}`
+    : `@page{margin:12mm}body{margin:0;font:12px/1.45 system-ui,sans-serif;color:#000;background:#fff}h2{font-size:18px;margin:0 0 8px}h4{margin:14px 0 6px;font-size:13px}table{width:100%;border-collapse:collapse}th,td{padding:4px 6px;border-bottom:1px solid #999;text-align:left;font-size:11.5px}.r,.kv td:last-child{text-align:right}.kv td{padding:4px 0}.badge{font-weight:700}.note,.muted{color:#444}.tw{overflow:visible}`;
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>${esc(title)}</title><style>${css}</style></head><body>${inner}</body></html>`;
+  if (!nat('print', html, title)) toast('Chop etishni boshlab bo‘lmadi', 'bad');
+}
+
+/* Zaxira nusxa: mahalliy bazadagi barcha hujjatlar bitta JSON faylda */
+function backupData() {
+  const docs = {};
+  for (const [k, v] of S.db.m) docs[k] = v;
+  return { app: 'kassa-nazorati', v: 2, at: Date.now(), shop: S.cfg ? S.cfg.main.shop.name : '', docs };
+}
+const restoreInput = () => `<input type="file" id="restoreFile" accept=".json,application/json" data-ch="restoreFile" hidden>`;
+const DOC_PATH = /^[A-Za-z0-9_\-.~:@+]+(\/[A-Za-z0-9_\-.~:@+]+)*$/;
+function restoreFromText(text) {
+  let b = null;
+  try { b = JSON.parse(text); } catch (e) { b = null; }
+  if (!b || b.app !== 'kassa-nazorati' || !b.docs || typeof b.docs !== 'object') return toast('Bu Kassa Nazorati zaxira fayli emas', 'bad');
+  const paths = Object.keys(b.docs).filter(p => DOC_PATH.test(p) && p.split('/').length % 2 === 0 && b.docs[p] && typeof b.docs[p] === 'object');
+  if (!paths.some(p => p === 'cfg/main')) return toast('Zaxira faylida do‘kon sozlamalari yo‘q', 'bad');
+  pushModal({ type: 'confirm', title: 'Zaxiradan tiklash', danger: true, ok: 'Tiklash',
+    text: `${b.shop ? b.shop + ', ' : ''}${dt(num(b.at))} holatidagi zaxira. Shu qurilmadagi hozirgi ma’lumotlar o‘rniga ${paths.length} ta hujjat yoziladi. Keyin qurilmani qayta ulaysiz.`,
+    onOk: () => {
+      for (const p of [...S.db.m.keys()]) S.db._del(p);
+      let bad = 0;
+      for (const p of paths) { try { S.db._put(p, b.docs[p]); } catch (e) { bad++; } }
+      resetLocalDevice();
+      for (const k of ['cfgc', 'pinsc', 'maint']) LS.del(k);
+      if (bad) toast(`${bad} ta hujjat tiklanmadi`, 'bad');
+      setTimeout(() => location.reload(), bad ? 1500 : 50);
+    } });
+}
+
+function vDbErr() {
+  return msg('Telefon bazasini o‘qib bo‘lmadi', 'Ma’lumotlar o‘chirilmagan. Ilovani yopib, qayta oching. Muammo takrorlansa, telefonni qayta yoqing va xotirada joy borligini tekshiring.',
+    `<button class="btn pri" data-a="reloadApp" style="margin-top:14px">Qayta urinish</button>`);
+}
+
+/* Android "Orqaga" tugmasi: avval oynalar yopiladi, keyin birinchi bo'limga qaytiladi */
+window.__knBack = () => {
+  try {
+    if (S.passive) return false;
+    const m = topModal();
+    if (m) { if (!m.busy) popModal(); return true; }
+    if (S.ui.more) { S.ui.more = false; render(); return true; }
+    if (S.ui.cartOpen) { ACT.cartClose(); return true; }
+    if (S.user && !S.readOnly && S.view) { const items = navItems(); if (items.length && S.view !== items[0][0]) { ACT.go({ v: items[0][0] }); return true; } }
+    if (!S.user && S.ui.who) { ACT.whoBack(); return true; }
+    if (!S.dev && S.ui.conn && S.ui.conn.who) { ACT.connBack(); return true; }
+    if (S.ui.onb && (S.ui.onb.step === 'form' || S.ui.onb.step === 'demo')) { ACT.onbBack(); return true; }
+  } catch (e) { }
+  return false;
+};
+
+Object.assign(ACT, {
+  printRec: d => { const r = model().receipts.get(d.id); if (r) printDoc('Chek ' + r.no, paperHTML(r), 'receipt'); },
+  printZ: d => { const sh = (S.zc && S.zc.get(d.id)) || model().shifts.get(d.id); if (sh) printDoc('Smena hisoboti', `<h2>Smena hisoboti</h2>${zHTML(sh)}`, 'report'); },
+  backupNow: async () => {
+    if (!S.db || !S.db.m) return;
+    if (pendingCount()) await pushNow();
+    await saveFile({ filename: `kassa-zaxira-${today()}.json`, data: JSON.stringify(backupData()) });
+    LS.set('lastBackup', Date.now());
+  },
+  restorePick: () => { const el = $('#restoreFile'); if (el) { el.value = ''; el.click(); } },
+  openOnline: () => { if (!nat('openUrl', ONLINE_URL)) copyText(ONLINE_URL); },
+  reloadApp: () => location.reload()
+});
+Object.assign(CH, {
+  restoreFile: (v, el) => {
+    const f = el.files && el.files[0]; if (!f) return;
+    const rd = new FileReader();
+    rd.onload = () => restoreFromText(String(rd.result || ''));
+    rd.onerror = () => toast('Faylni o‘qib bo‘lmadi', 'bad');
+    rd.readAsText(f);
+  },
+  cfgPaper: v => { S.ui.cfg.settings.paper = num(v); }
+});
 
 /* ---- 80-actions.js ---- */
 /* ============ Amallar (tugmalar) ============ */
@@ -3611,6 +3746,7 @@ Object.assign(CH, {
 /* ============ Ekranni tanlash ============ */
 function screen() {
   if (S.passive) return vPassive();
+  if (S.db && S.db.loadErr) return vDbErr();
   if (S.readOnly) { if (!S.cfgReady) return vBoot('Ma’lumotlar yuklanmoqda…'); if (!S.cfg) return vNotSetup(); return vShell(); }
   if (!S.cfgReady) return vBoot(S.mode ? 'Ma’lumotlar yuklanmoqda…' : 'Ulanmoqda…');
   if (!S.cfg) return S.mode ? (canAdminCfg() ? vOnboard() : vNotSetup()) : vBoot('Ulanmoqda…');

@@ -20,7 +20,7 @@ function defaultSettings() {
   return {
     discLimit: 5, varLimit: 5000, voidAlert: 3, varStreak: 2, maxShiftH: 14, lockMin: 5,
     methods: { uzcard: true, humo: true, click: true, payme: true, nasiya: true },
-    debtLimit: 2000000, refundDays: 14, keepDays: 180,
+    debtLimit: 2000000, refundDays: 14, keepDays: 180, paper: 80,
     footer: 'Xaridingiz uchun rahmat!'
   };
 }
@@ -158,7 +158,7 @@ function debtFromEvent(e) {
 
 /* ============ Bazaga yuborish ============ */
 let pushing = false, pushTimer = null, backoff = 0, lastSumFlush = 0;
-function schedulePush(delay) { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, delay == null ? 500 : delay); }
+function schedulePush(delay) { clearTimeout(pushTimer); pushTimer = setTimeout(pushNow, delay == null ? (S.mode === 'local' ? 30 : 500) : delay); }
 const dbErrCode = err => (err && err.code) || 'unavailable';
 function handleDbErr(err, where) {
   const c = dbErrCode(err);
@@ -503,7 +503,7 @@ async function maintenance(force) {
   const last = num(LS.get('maint', 0));
   if (!force && Date.now() - last < 20 * 3600000) return;
   let keep = Math.max(30, num(CFG().keepDays) || 180);
-  if (S.mode === 'local') keep = Math.min(keep, 35);
+  if (S.mode === 'local' && !(S.db && S.db.nat)) keep = Math.min(keep, 35);
   const cutoff = addD(today(), -keep);
   try {
     if (S.mode === 'remote') {

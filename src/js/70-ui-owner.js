@@ -200,6 +200,10 @@ function reportCSV() {
   return { filename: `${name}_${S.ui.from}_${S.ui.to}.csv`, data: toCSV(rows) };
 }
 async function saveFile(file) {
+  if (hasNat('share')) {
+    const mime = /\.json$/.test(file.filename) ? 'application/json' : /\.csv$/.test(file.filename) ? 'text/csv' : 'text/plain';
+    if (nat('share', file.filename, mime, file.data)) return;
+  }
   if (S.dl) {
     try { await S.dl.save(file); toast('Fayl saqlandi'); return; }
     catch (e) { const c = e && e.code; if (c === 'declined') return; if (c !== 'unavailable' && c !== 'not_granted' && c !== 'capability_disabled' && c !== 'capability_removed') { toast('Faylni saqlab bo‘lmadi: ' + (c || 'xato'), 'bad'); return; } }
@@ -310,7 +314,7 @@ function parseImport(text) {
   }
   const rows = [], errors = [];
   for (let i = start; i < lines.length; i++) {
-    const c = split(lines[i]), get = k => cols[k] >= 0 ? String(c[cols[k]] ?? '').trim() : '';
+    const c = split(lines[i]), get = k => cols[k] >= 0 ? String(c[cols[k]] == null ? '' : c[cols[k]]).trim() : '';
     const name = get('name'), price = num(get('price').replace(/[.,]\d{1,2}$/, ''));
     if (!name) { errors.push(`${i + 1}-qator: nomi yo‘q`); continue; }
     if (!(price > 0)) { errors.push(`${i + 1}-qator (${name}): narx noto‘g‘ri`); continue; }
@@ -383,7 +387,8 @@ VIEWS.settings = function vSettings() {
       ${METHODS.filter(m => m.k !== 'cash').map(m => `<label class="check"><input type="checkbox" id="cfgm_${m.k}" data-ch="cfgM" data-k="${m.k}" ${s.methods[m.k] ? 'checked' : ''} ${ro ? 'disabled' : ''}>${m.n}${m.k === 'nasiya' ? ' (qarzga savdo, mijozlar daftari bilan)' : ''}</label>`).join('')}</section>
     <section class="sec"><h2>Biznes va chek</h2><div class="frm2">
       <label class="f">Biznes nomi<input class="inp" id="cfg_shop" data-in="cfgShop" value="${esc(c.shop)}" maxlength="60" ${ro ? 'disabled' : ''}></label>
-      <label class="f">Chek oxiridagi matn<input class="inp" id="cfg_footer" data-in="cfgT" data-f="footer" value="${esc(s.footer)}" maxlength="80" ${ro ? 'disabled' : ''}></label></div></section>
+      <label class="f">Chek oxiridagi matn<input class="inp" id="cfg_footer" data-in="cfgT" data-f="footer" value="${esc(s.footer)}" maxlength="80" ${ro ? 'disabled' : ''}></label>
+      ${canPrint() ? `<label class="f">Chek printeri eni<select class="inp" id="cfg_paper" data-ch="cfgPaper" ${ro ? 'disabled' : ''}><option value="80" ${num(s.paper) !== 58 ? 'selected' : ''}>80 mm</option><option value="58" ${num(s.paper) === 58 ? 'selected' : ''}>58 mm</option></select><small>Chek Android printer xizmati orqali chiqadi (masalan, RawBT)</small></label>` : ''}</div></section>
     <section class="sec"><h2>Do‘konlar</h2>
       ${c.stores.map((st, i) => `<div class="frm" style="grid-template-columns:1.2fr 1.4fr .6fr .6fr;margin-bottom:12px">
         <label class="f">Nomi<input class="inp" id="st_n${i}" data-in="cfgS" data-i="${i}" data-f="name" value="${esc(st.name)}" ${ro ? 'disabled' : ''}></label>
@@ -402,7 +407,10 @@ VIEWS.settings = function vSettings() {
       ${S.lastErr ? `<p class="note" style="margin-top:8px">Oxirgi xato: <span class="num">${esc(S.lastErr)}</span></p>` : ''}
       <div class="toolbar" style="margin-top:12px">${!ro ? `<button class="btn" data-a="maintNow">Eski yozuvlarni hozir tozalash</button>` : ''}
         ${S.dev ? `<button class="btn danger" data-a="resetDev">Shu qurilmani qayta ulash</button>` : ''}
-        ${!ro ? `<button class="btn danger" data-a="wipeAll">Barcha ma’lumotlarni o‘chirish</button>` : ''}</div></section>
+        ${!ro ? `<button class="btn danger" data-a="wipeAll">Barcha ma’lumotlarni o‘chirish</button>` : ''}</div>
+      ${S.mode === 'local' ? `<div class="infobox" style="margin-top:14px">Ma\u2019lumotlar faqat shu qurilmada saqlanadi. Zaxira nusxani muntazam olib, Telegram yoki Google Drive\u2019ga saqlang: telefon almashsa yoki ilova qayta o\u2018rnatilsa, shu fayldan tiklanadi.${LS.get('lastBackup', 0) ? ` Oxirgi zaxira: ${dt(LS.get('lastBackup', 0))}.` : ''}</div>
+      <div class="toolbar" style="margin-top:12px"><button class="btn pri" data-a="backupNow">${I.save}Zaxira nusxa olish</button>${!ro ? `<button class="btn" data-a="restorePick">${I.up}Zaxiradan tiklash</button>` : ''}${restoreInput()}</div>` : ''}
+      ${NATIVE ? `<div class="toolbar" style="margin-top:12px"><button class="btn" data-a="openOnline">${I.link}Onlayn versiyani ochish</button><span class="note">Bir nechta qurilma sinxron ishlashi kerak bo\u2018lsa, claude.ai\u2019dagi versiyadan foydalaning.</span></div>` : ''}</section>
   </div>`;
 };
 

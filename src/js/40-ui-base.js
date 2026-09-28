@@ -35,7 +35,10 @@ const I = {
   shield: ic('<path d="M12 3 5 6v5c0 4.5 3 8.3 7 10 4-1.7 7-5.5 7-10V6z"/><path d="m9 12 2 2 4-4"/>'),
   alert: ic('<path d="M12 4 2.5 20h19z"/><path d="M12 10v4.5M12 17.5v.5"/>'),
   user: ic('<circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4.3-6 8-6s7 2 8 6"/>'),
-  spark: ic('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>')
+  spark: ic('<path d="M12 3v4M12 17v4M3 12h4M17 12h4M6 6l2.5 2.5M15.5 15.5 18 18M6 18l2.5-2.5M15.5 8.5 18 6"/>'),
+  print: ic('<path d="M7 9V3h10v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/>'),
+  save: ic('<path d="M5 3h11l3 3v15H5z"/><path d="M8 3v5h8V3M8 21v-7h8v7"/>'),
+  link: ic('<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>')
 };
 
 /* ============ Render asoslari ============ */
@@ -62,6 +65,8 @@ function render() {
   S._keepScroll = false;
   restoreFocus(f);
   renderModal();
+  const kso = !!(S.dev && S.dev.type === 'cashier' && S.user);
+  if (kso !== S._kso) { S._kso = kso; nat('keepScreenOn', kso); }
 }
 let renderT = null, renderForce = false;
 function renderSoon(force) {
@@ -90,7 +95,7 @@ function netPill() {
   if (S.storageFull) return `<span class="pill bad" title="Qurilma xotirasi to‘lgan">Xotira to‘lgan</span>`;
   if (!S.mode) return `<span class="pill">Ulanmoqda</span>`;
   if (S.readOnly) return `<span class="pill info">Faqat ko‘rish</span>`;
-  if (S.mode === 'local') return `<span class="pill" title="Umumiy baza ulanmagan: ma’lumotlar faqat shu qurilmada">Faqat shu qurilma</span>`;
+  if (S.mode === 'local') return S.quota ? `<span class="pill bad">Xotira to‘lgan${p ? ', navbatda ' + p : ''}</span>` : `<span class="pill" title="Umumiy baza ulanmagan: ma’lumotlar faqat shu qurilmada">Faqat shu qurilma</span>`;
   if (S.revoked) return `<span class="pill bad">Baza uzildi${p ? ', navbatda ' + p : ''}</span>`;
   if (S.writeDenied) return `<span class="pill bad">Yozish rad etildi${p ? ', navbatda ' + p : ''}</span>`;
   if (S.quota) return `<span class="pill bad">Baza to‘lgan</span>`;
@@ -102,10 +107,11 @@ function netPill() {
 function banners() {
   const out = [];
   if (S.cfg && S.cfg.main.demo) out.push(`<div class="banner info">${I.spark}<span class="grow">Namuna ma’lumotlar bilan ishlayapsiz. Bu cheklar va smenalar haqiqiy emas.</span>${S.user && S.user.role === 'admin' && canAdminCfg() ? `<button class="btn sm" data-a="demoClear">Tozalab, o‘z do‘konimni sozlash</button>` : ''}</div>`);
-  if (S.storageFull) out.push(`<div class="banner bad">${I.alert}<span>Qurilma xotirasi to‘lgan. Yangi yozuvlar saqlanmasligi mumkin. Internetni ulang: yozuvlar yuborilgach joy bo‘shaydi.</span></div>`);
+  const localFull = `Qurilma xotirasi to‘lgan. Telefonda joy bo‘shating (keraksiz rasm, video yoki ilovalarni o‘chiring), keyin zaxira nusxa oling.`;
+  if (S.storageFull) out.push(`<div class="banner bad">${I.alert}<span>${S.mode === 'local' ? localFull : 'Qurilma xotirasi to‘lgan. Yangi yozuvlar saqlanmasligi mumkin. Internetni ulang: yozuvlar yuborilgach joy bo‘shaydi.'}</span></div>`);
   if (S.writeDenied) out.push(`<div class="banner bad">${I.alert}<span>Umumiy bazaga yozish rad etildi. Ilova egasidan sizga kamida “Contributor” yoki “Editor” huquqini berishini so‘rang. Yozuvlar shu qurilmada saqlanib turibdi.</span></div>`);
   if (S.revoked) out.push(`<div class="banner bad">${I.alert}<span>Umumiy bazaga kirish to‘xtatildi. Yozuvlar shu qurilmada saqlanib turibdi.</span></div>`);
-  if (S.quota) out.push(`<div class="banner bad">${I.alert}<span>Umumiy baza to‘lgan. Sozlamalardagi “Ma’lumotlar” bo‘limida eski yozuvlarni tozalang.</span></div>`);
+  if (S.quota && !(S.mode === 'local' && S.storageFull)) out.push(`<div class="banner bad">${I.alert}<span>${S.mode === 'local' ? localFull + ' Yozuvlar navbatda saqlanib turibdi.' : 'Umumiy baza to‘lgan. Sozlamalardagi “Ma’lumotlar” bo‘limida eski yozuvlarni tozalang.'}</span></div>`);
   if (!LS.ok) out.push(`<div class="banner">${I.alert}<span>Brauzer xotirasi yopiq. Qurilma sozlamalari sahifa yopilganda yo‘qoladi.</span></div>`);
   return out.join('');
 }

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Android 10+: telefon qorong'i mavzuda bo'lsa, ilova ham qorong'i ko'rinadi -->
+    <style name="AppTheme" parent="@android:style/Theme.DeviceDefault.DayNight">
+        <item name="android:windowActionBar">false</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:statusBarColor">@color/brand_deep</item>
+        <item name="android:navigationBarColor">@color/brand_deep</item>
+        <item name="android:windowBackground">@color/window_bg</item>
+    </style>
+</resources>

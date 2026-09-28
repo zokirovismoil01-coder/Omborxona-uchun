@@ -1,6 +1,7 @@
 /* ============ Ekranni tanlash ============ */
 function screen() {
   if (S.passive) return vPassive();
+  if (S.db && S.db.loadErr) return vDbErr();
   if (S.readOnly) { if (!S.cfgReady) return vBoot('Ma’lumotlar yuklanmoqda…'); if (!S.cfg) return vNotSetup(); return vShell(); }
   if (!S.cfgReady) return vBoot(S.mode ? 'Ma’lumotlar yuklanmoqda…' : 'Ulanmoqda…');
   if (!S.cfg) return S.mode ? (canAdminCfg() ? vOnboard() : vNotSetup()) : vBoot('Ulanmoqda…');

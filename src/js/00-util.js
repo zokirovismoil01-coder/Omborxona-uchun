@@ -1,12 +1,12 @@
 /* ============ Yordamchi funksiyalar ============ */
 const $ = (s, r = document) => r.querySelector(s);
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const num = v => {
   if (typeof v === 'number') return isFinite(v) ? v : 0;
-  const n = parseInt(String(v ?? '').replace(/[^\d-]/g, ''), 10);
+  const n = parseInt(String(v == null ? '' : v).replace(/[^\d-]/g, ''), 10);
   return isFinite(n) ? n : 0;
 };
-const qnum = v => { const n = parseFloat(String(v ?? '').replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
+const qnum = v => { const n = parseFloat(String(v == null ? '' : v).replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; };
 const r3 = x => Math.round((+x || 0) * 1000) / 1000;
 const SOM = 'so‘m';
 const fmt = n => {
@@ -138,7 +138,7 @@ function ean13(d12) { let s = 0; for (let i = 0; i < 12; i++) s += (+d12[i]) * (
 /* CSV (Excel uchun ; ajratgich va BOM) */
 const csvCell = v => {
   if (typeof v === 'number') return String(v);
-  v = String(v ?? '');
+  v = String(v == null ? '' : v);
   if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; /* Excel formulasi sifatida bajarilmasin */
   return /[";\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
 };

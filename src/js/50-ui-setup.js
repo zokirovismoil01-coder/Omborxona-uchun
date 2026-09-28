@@ -47,8 +47,9 @@ function vOnboard() {
     <div class="choice">
       <button class="card-choice" data-a="onbReal"><span class="ci">${I.store}</span><span><b>O‘z do‘konimni sozlash</b><span>Do‘kon nomi, ish vaqti va o‘zingizning PIN kodingiz. 2 daqiqa.</span></span></button>
       <button class="card-choice" data-a="onbDemo"><span class="ci">${I.spark}</span><span><b>Namuna bilan tanishish</b><span>Ikki do‘kon, besh xodim va bir haftalik savdo bilan tayyor ko‘rinish. Keyin bir tugma bilan tozalanadi.</span></span></button>
+      ${S.mode === 'local' ? `<button class="card-choice" data-a="restorePick"><span class="ci">${I.save}</span><span><b>Zaxiradan tiklash</b><span>Avval olingan zaxira faylidan barcha ma’lumotlarni qaytarish.</span></span></button>` : ''}
     </div>
-    ${S.mode === 'local' ? `<div class="infobox">Umumiy baza ulanmagan, shuning uchun ma’lumotlar faqat shu qurilmada saqlanadi.</div>` : ''}</div>`;
+    ${S.mode === 'local' ? `<div class="infobox">${NATIVE ? 'Ma’lumotlar shu telefon xotirasida saqlanadi va internetsiz ishlaydi. Zaxira nusxani Sozlamalar bo‘limidan olib turing.' : 'Umumiy baza ulanmagan, shuning uchun ma’lumotlar faqat shu qurilmada saqlanadi.'}</div>${restoreInput()}` : ''}</div>`;
   else if (o.step === 'demo') body = `<div class="onb"><h2>Namuna: bu qurilma</h2>
     <p class="muted">Bu qurilma nima uchun ishlatiladi? Namunada ham xuddi haqiqiydagidek ishlaydi.</p>
     <div class="seg" role="group"><button class="${o.f.type === 'monitor' ? 'on' : ''}" data-a="onbType" data-k="monitor">Egasi telefoni (nazorat)</button><button class="${o.f.type === 'cashier' ? 'on' : ''}" data-a="onbType" data-k="cashier">Kassa</button></div>
