@@ -30,11 +30,34 @@ Dastur noto'g'ri tushunsa:
 - yozuv ustiga bosib, uni tahrirlang yoki o'chiring;
 - qo'shilgandan keyin chiqqan xabardagi **«Bekor qilish»** tugmasini bosing.
 
-## Ishga tushirish
+## 📱 Android ilova (APK)
+
+Eng oson yo'li — tayyor APK'ni o'rnatish:
+
+1. Telefonda shu havolani oching va faylni yuklab oling:
+   **https://github.com/zokirovismoil01-coder/Omborxona-uchun/releases/latest/download/kundalik-yordamchi.apk**
+2. Yuklangan `kundalik-yordamchi.apk` faylini oching.
+3. Telefon so'rasa, **«Noma'lum ilovalarni o'rnatish»** (Install unknown apps) ga ruxsat bering.
+   Play Protect ogohlantirsa, **«Baribir o'rnatish»** ni bosing.
+
+APK ichida:
+- ovozni telefonning o'zidagi **Google ovoz tanish xizmati** o'zbek tilida taniydi (internet kerak);
+- eslatmalar **ilova yopiq bo'lsa ham** vaqtida keladi, telefon qayta yoqilganda ham saqlanadi;
+- zaxira nusxa va CSV fayllarni o'zingiz tanlagan papkaga saqlaysiz.
+
+APK har safar kod yangilanganda GitHub Actions orqali avtomatik yig'iladi
+(`.github/workflows/android.yml`) va **Releases** bo'limiga qo'yiladi. Yangi versiya
+eskisining ustidan o'rnatiladi, ma'lumotlar o'chmaydi.
+
+> APK imzo kaliti (`android/app/kundalik-release.jks`) qulaylik uchun repozitoriyada turibdi.
+> Bu shaxsiy foydalanish uchun yetarli. Ilovani Play Market'ga chiqarmoqchi bo'lsangiz,
+> yangi maxfiy kalit yarating va uni GitHub Secrets'da saqlang.
+
+## Brauzerda ishga tushirish
 
 Mikrofon faqat **https://** manzilda (yoki `localhost`da) ishlaydi.
 
-### 1-usul: GitHub Pages (telefon uchun tavsiya etiladi)
+### 1-usul: GitHub Pages
 
 1. GitHub'da repozitoriyani oching, keyin **Settings → Pages** bo'limiga kiring.
 2. **Source: Deploy from a branch** ni tanlang, so'ng branch va `/ (root)` papkasini belgilang.
@@ -53,7 +76,7 @@ python3 -m http.server 8080
 - **Brauzer.** Ovozni tanish Android va kompyuterdagi **Google Chrome**'da (yoki Edge'da) ishlaydi. Ovozni Google xizmati taniydi, shuning uchun gapirish paytida internet kerak.
 - **iPhone / Safari.** O'zbek tilida ovoz tanish yo'q bo'lishi mumkin. Unda matn maydoniga bosing va klaviaturadagi 🎤 tugmasi orqali gapiring (Gboard yoki o'zbekcha klaviatura). Dastur yozilgan matnni xuddi shunday tahlil qiladi.
 - **Ma'lumotlar.** Hammasi faqat sizning qurilmangizda (brauzer xotirasida) saqlanadi, hech qayerga yuborilmaydi. Brauzer ma'lumotlarini tozalasangiz yo'qolishi mumkin, shuning uchun **Hisobot → Zaxira nusxa olish** dan foydalanib turing.
-- **Eslatmalar.** Ilova ochiq (yoki fonda) turganda ishlaydi.
+- **Eslatmalar.** Brauzer versiyasida ilova ochiq (yoki fonda) turganda ishlaydi. APK'da esa ilova yopiq bo'lsa ham keladi.
 
 ## Loyiha tuzilishi
 
@@ -65,6 +88,16 @@ js/app.js             — ilova mantig'i, ovozni tanish, saqlash, eslatmalar
 sw.js                 — oflayn ishlash va bildirishnomalar
 manifest.webmanifest  — telefonga o'rnatish sozlamalari
 tests/                — tahlilchi testlari
+android/              — Android ilova (WebView + ovoz tanish, eslatmalar)
+.github/workflows/    — APK'ni avtomatik yig'ish
+```
+
+APK'ni kompyuterda yig'ish (JDK 17 va Android SDK kerak):
+
+```bash
+cd android
+./gradlew assembleRelease
+# natija: android/app/build/outputs/apk/release/app-release.apk
 ```
 
 Testlarni ishga tushirish (Node.js 18+):

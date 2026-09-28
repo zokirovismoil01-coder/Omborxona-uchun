@@ -1,0 +1,56 @@
+name: Android APK
+
+# Har bir yangi kod yuklanganda APK yig'iladi va "Releases" bo'limiga joylanadi.
+on:
+  push:
+    branches: ['claude/salom-b5sq2v', 'main']
+    paths-ignore: ['**.md']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tahlilchi testlari
+        run: node --test tests/*.test.js
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: APK yig'ish
+        working-directory: android
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: APK faylini tayyorlash
+        run: cp android/app/build/outputs/apk/release/app-release.apk kundalik-yordamchi.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: kundalik-yordamchi
+          path: kundalik-yordamchi.apk
+
+      - name: Release'ga joylash
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          name: Kundalik yordamchi 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          make_latest: true
+          files: kundalik-yordamchi.apk
+          body: |
+            📱 **O'rnatish:** pastdagi `kundalik-yordamchi.apk` faylini telefoningizga yuklab oling va oching.
+            Telefon so'rasa, «Noma'lum ilovalarni o'rnatish»ga ruxsat bering.
+            Yangi versiya eskisining ustidan o'rnatiladi, ma'lumotlaringiz saqlanib qoladi.

@@ -4,6 +4,8 @@
   const P = window.UzParser;
   const STORE_KEY = 'kundalik-yordamchi-v1';
   const $ = (id) => document.getElementById(id);
+  // Android ilovasi (APK) ichida ishlaganda Java tomonidan beriladigan ko'prik
+  const Native = window.AndroidBridge || null;
 
   const MONTHS = ['yanvar', 'fevral', 'mart', 'aprel', 'may', 'iyun', 'iyul', 'avgust', 'sentabr', 'oktabr', 'noyabr', 'dekabr'];
   const WEEKDAYS = ['yakshanba', 'dushanba', 'seshanba', 'chorshanba', 'payshanba', 'juma', 'shanba'];
@@ -45,6 +47,7 @@
     } catch (e) {
       toast("Saqlab bo'lmadi — xotira to'lgan bo'lishi mumkin");
     }
+    syncNativeReminders();
   }
 
   function snapshot() {
@@ -262,8 +265,10 @@
     }
 
     if (first.type === 'done') {
-      const pool = data.tasks.filter((t) => !t.done && (t.date === selected || t.date <= todayKey()));
-      const match = P.matchTask(first.query, pool);
+      // Avval shu kun va o'tgan kunlardan, topilmasa kelgusi vazifalardan qidiramiz
+      const open = data.tasks.filter((t) => !t.done);
+      const match = P.matchTask(first.query, open.filter((t) => t.date === selected || t.date <= todayKey()))
+        || P.matchTask(first.query, open);
       if (!match) {
         toast('Mos vazifa topilmadi: «' + first.query + '»');
         return;
@@ -291,6 +296,7 @@
     results.forEach((r) => {
       if (r.type === 'task') {
         const t = addTask(r);
+        if (t.time) askNotificationsIfNeeded();
         messages.push('📝 ' + t.text + (t.time ? ' (' + t.time + ')' : ''));
         lastDate = t.date;
         showTab('tasks');
@@ -361,6 +367,7 @@
       t.text = val('text');
       t.date = val('date');
       t.time = newTime;
+      if (newTime) askNotificationsIfNeeded();
     } else {
       const e = editing.item;
       const upd = {
@@ -425,7 +432,9 @@
     micStatus.textContent = text;
   }
 
-  if (!SR) {
+  if (Native) {
+    // APK ichida ovozni Android'ning o'zi taniydi
+  } else if (!SR) {
     micBtn.disabled = true;
     setStatus("Bu brauzer ovozni tanimaydi. Android'da Google Chrome'dan foydalaning yoki klaviaturadagi 🎤 tugmasi orqali pastdagi maydonga ayting.");
   } else if (location.protocol === 'file:') {
@@ -491,9 +500,37 @@
   }
 
   micBtn.onclick = () => {
+    if (Native) {
+      micBtn.classList.add('listening');
+      setStatus('Eshitayapman… gapiring');
+      transcriptEl.textContent = '';
+      Native.startListening();
+      return;
+    }
     if (!SR) return;
     if (listening && rec) rec.stop();
     else startListening();
+  };
+
+  const NATIVE_SPEECH_ERRORS = {
+    cancelled: 'Tugmani bosib gapiring',
+    'no-match': "Tushunilmadi, qaytadan urinib ko'ring.",
+    network: 'Ovozni tanish uchun internet kerak.',
+    server: "Ovoz tanish xizmatida xatolik. Birozdan keyin urinib ko'ring.",
+    audio: "Mikrofon bilan muammo. Ilovaga mikrofon ruxsatini tekshiring.",
+    'no-recognizer': "Telefonda ovoz tanish xizmati topilmadi. Play Market'dan «Google» ilovasini o'rnating yoki yangilang.",
+  };
+
+  window.onNativeSpeechResult = (text) => {
+    micBtn.classList.remove('listening');
+    transcriptEl.textContent = '«' + text + '»';
+    setStatus('Tugmani bosib gapiring');
+    handleText(text);
+  };
+
+  window.onNativeSpeechError = (code) => {
+    micBtn.classList.remove('listening');
+    setStatus(NATIVE_SPEECH_ERRORS[code] || "Xatolik yuz berdi, qaytadan urinib ko'ring.");
   };
 
   $('textForm').onsubmit = (ev) => {
@@ -556,6 +593,10 @@
   // ---------- Eksport / import ----------
 
   function download(name, content, type) {
+    if (Native) {
+      Native.saveFile(name, content, type);
+      return;
+    }
     const blob = new Blob([content], { type });
     const a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
@@ -605,6 +646,11 @@
     reader.readAsText(file);
   };
 
+  window.onNativeFileSaved = (status) => {
+    if (status === 'saved') toast('💾 Fayl saqlandi');
+    else if (status === 'error') toast("Faylni saqlab bo'lmadi");
+  };
+
   // ---------- Eslatmalar ----------
 
   let swReg = null;
@@ -612,13 +658,63 @@
     navigator.serviceWorker.register('sw.js').then((r) => { swReg = r; }).catch(() => {});
   }
 
+  function notificationsOn() {
+    // APK'da eslatmalar sukut bo'yicha yoqilgan, faqat ruxsat kerak
+    if (Native) return data.settings.notify !== false && Native.notificationsAllowed();
+    return !!data.settings.notify && 'Notification' in window && Notification.permission === 'granted';
+  }
+
   function updateNotifyBtn() {
-    const on = data.settings.notify && 'Notification' in window && Notification.permission === 'granted';
-    $('notifyBtn').classList.toggle('on', !!on);
+    const on = notificationsOn();
+    $('notifyBtn').classList.toggle('on', on);
     $('notifyBtn').title = on ? "Eslatmalar yoqilgan" : 'Eslatmalarni yoqish';
   }
 
+  // APK: kelgusi eslatmalarni Android'ga topshiramiz (ilova yopiq bo'lsa ham ishlaydi)
+  function syncNativeReminders() {
+    if (!Native) return;
+    const now = Date.now();
+    const list = data.settings.notify === false ? [] : data.tasks
+      .filter((t) => !t.done && t.time && t.date)
+      .map((t) => {
+        const [y, m, d] = t.date.split('-').map(Number);
+        const [hh, mm] = t.time.split(':').map(Number);
+        return { id: t.id, at: new Date(y, m - 1, d, hh, mm).getTime(), text: t.time + ' — ' + t.text };
+      })
+      .filter((r) => r.at > now);
+    try {
+      Native.syncReminders(JSON.stringify(list));
+    } catch (e) { /* ko'prik mavjud bo'lmasa, jim o'tamiz */ }
+  }
+
+  // APK: birinchi vaqtli vazifa qo'shilganda bildirishnomaga bir marta ruxsat so'raymiz
+  function askNotificationsIfNeeded() {
+    if (Native && data.settings.notify !== false && !Native.notificationsAllowed()) {
+      Native.askNotificationsOnce();
+    }
+  }
+
+  window.onNativeNotifyPermission = (state) => {
+    updateNotifyBtn();
+    if (state === 'granted') toast("🔔 Eslatmalar yoqildi. Ilova yopiq bo'lsa ham vaqtida eslataman");
+    else if (state === 'settings') toast('Sozlamalarda «Kundalik» uchun bildirishnomalarni yoqing');
+    else toast('Bildirishnomaga ruxsat berilmadi');
+  };
+
   $('notifyBtn').onclick = async () => {
+    if (Native) {
+      if (notificationsOn()) {
+        data.settings.notify = false;
+        save();
+        updateNotifyBtn();
+        toast("Eslatmalar o'chirildi");
+      } else {
+        data.settings.notify = true;
+        save();
+        Native.requestNotifications();
+      }
+      return;
+    }
     if (!('Notification' in window)) {
       toast("Bu brauzer bildirishnomalarni qo'llamaydi");
       return;
@@ -697,11 +793,31 @@
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {
       checkReminders();
+      updateNotifyBtn();
       render();
     }
   });
 
+  // APK: telefonning "orqaga" tugmasi. true qaytarsa, ilova yopilmaydi.
+  window.onNativeBack = () => {
+    if (dialog.open) {
+      dialog.close('cancel');
+      return true;
+    }
+    if ($('tab-tasks').hidden) {
+      showTab('tasks');
+      return true;
+    }
+    if (selected !== todayKey()) {
+      selected = todayKey();
+      render();
+      return true;
+    }
+    return false;
+  };
+
   updateNotifyBtn();
   render();
   checkReminders();
+  syncNativeReminders();
 })();

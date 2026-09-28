@@ -1,0 +1,67 @@
+plugins {
+    id 'com.android.application'
+}
+
+// GitHub Actions'da har bir yig'ishda versiya raqami oshib boradi,
+// shuning uchun yangi APK eskisining ustidan o'rnatiladi.
+def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+// Veb-ilova fayllari (index.html, css, js, icons) repozitoriya ildizidan
+// APK ichiga assets/www sifatida ko'chiriladi.
+def webAssetsDir = file('web-assets')
+sync {
+    from(rootProject.file('..')) {
+        include 'index.html', 'manifest.webmanifest', 'css/**', 'js/**', 'icons/**'
+    }
+    into new File(webAssetsDir, 'www')
+}
+
+android {
+    namespace 'uz.kundalik.yordamchi'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'uz.kundalik.yordamchi'
+        minSdk 24
+        targetSdk 34
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    signingConfigs {
+        release {
+            // Shaxsiy foydalanish uchun kalit. Play Market'ga chiqarishda
+            // yangi, maxfiy kalit yaratib, uni GitHub Secrets'da saqlang.
+            storeFile file('kundalik-release.jks')
+            storePassword 'kundalik2026'
+            keyAlias 'kundalik'
+            keyPassword 'kundalik2026'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    sourceSets {
+        main {
+            assets.srcDir webAssetsDir
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}
