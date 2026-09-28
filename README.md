@@ -19,6 +19,8 @@ O'zbek tilida ovoz bilan boshqariladigan kundalik: **bugun nima qilish kerak** v
 | «Onamga qo'ng'iroq qilish» | 📝 Bugungi vazifa |
 | «Ertaga soat 10 da bankka borishim kerak» | 📝 Ertangi vazifa, 10:00 |
 | «Juma kuni hisobot topshirish» | 📝 Juma kungi vazifa |
+| «5 daqiqadan keyin uchrashuv» | ⏰ Aynan 5 daqiqadan keyin eslatma |
+| «Yarim soatdan keyin dori ichish» | ⏰ 30 daqiqadan keyin eslatma |
 | «Non uchun 5000 so'm sarfladim» | 💰 Non — 5 000 so'm (Oziq-ovqat) |
 | «Taksiga yigirma besh ming so'm berdim» | 💰 Taksiga — 25 000 so'm (Transport) |
 | «Non 5000 so'm va sut 12 ming so'm» | 💰 Ikkita alohida xarajat |

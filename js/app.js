@@ -236,6 +236,7 @@
 
   function addTask(r) {
     const t = { id: uid(), text: r.text, date: r.date, time: r.time || null, done: false, createdAt: Date.now() };
+    if (r.at) t.at = r.at;
     data.tasks.push(t);
     return t;
   }
@@ -297,7 +298,7 @@
       if (r.type === 'task') {
         const t = addTask(r);
         if (t.time) askNotificationsIfNeeded();
-        messages.push('📝 ' + t.text + (t.time ? ' (' + t.time + ')' : ''));
+        messages.push('📝 ' + t.text + (t.at ? ' — ⏰ ' + t.time + ' da eslataman' : t.time ? ' (' + t.time + ')' : ''));
         lastDate = t.date;
         showTab('tasks');
       } else if (r.type === 'expense' && r.amount) {
@@ -363,7 +364,10 @@
     if (editing.kind === 'task') {
       const t = editing.item;
       const newTime = val('time') || null;
-      if (newTime !== t.time || val('date') !== t.date) t.reminded = false;
+      if (newTime !== t.time || val('date') !== t.date) {
+        t.reminded = false;
+        delete t.at;
+      }
       t.text = val('text');
       t.date = val('date');
       t.time = newTime;
@@ -679,7 +683,7 @@
       .map((t) => {
         const [y, m, d] = t.date.split('-').map(Number);
         const [hh, mm] = t.time.split(':').map(Number);
-        return { id: t.id, at: new Date(y, m - 1, d, hh, mm).getTime(), text: t.time + ' — ' + t.text };
+        return { id: t.id, at: t.at || new Date(y, m - 1, d, hh, mm).getTime(), text: t.time + ' — ' + t.text };
       })
       .filter((r) => r.at > now);
     try {
@@ -761,7 +765,8 @@
     const now = nowHM();
     let changed = false;
     data.tasks.forEach((t) => {
-      if (t.done || t.reminded || !t.time || t.date !== today || t.time > now) return;
+      if (t.done || t.reminded || !t.time) return;
+      if (t.at ? Date.now() < t.at : (t.date !== today || t.time > now)) return;
       t.reminded = true;
       changed = true;
       // Juda eski eslatmalarni (1 soatdan ko'p o'tgan) ko'rsatmaymiz
@@ -788,7 +793,7 @@
       render();
     }
     checkReminders();
-  }, 20000);
+  }, 10000);
 
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) {

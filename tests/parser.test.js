@@ -127,3 +127,31 @@ test("ming aytilsa so'm aytilmasa ham xarajat", () => {
   assert.equal(parse("mashina moyi 300 ming so'mga").category, 'Transport');
   assert.equal(parse('3 ta kitob oldim').type, 'task');
 });
+
+test("nisbiy vaqt: '5 daqiqadan keyin'", () => {
+  const now = new Date(2026, 8, 28, 14, 3, 40);
+  const r = P.parse('5 daqiqadan keyin uchrashuv', { today: now });
+  assert.equal(r.type, 'task');
+  assert.equal(r.text, 'Uchrashuv');
+  assert.equal(r.date, '2026-09-28');
+  assert.equal(r.time, '14:08');
+  assert.equal(r.at, now.getTime() + 5 * 60000);
+});
+
+test("nisbiy vaqt: soat, yarim soat, so'z bilan son", () => {
+  const now = new Date(2026, 8, 28, 14, 0, 0);
+  const p = (s) => P.parse(s, { today: now });
+  assert.equal(p("yarim soatdan keyin onamga qo'ng'iroq qilish").time, '14:30');
+  assert.equal(p('bir yarim soatdan keyin dori ichish').time, '15:30');
+  assert.equal(p("2 soatdan so'ng majlis").time, '16:00');
+  assert.equal(p("o'n besh minutdan keyin choy").time, '14:15');
+  const d = p('3 kundan keyin hisobot topshirish');
+  assert.equal(d.date, '2026-10-01');
+  assert.equal(d.time, null);
+});
+
+test('nisbiy vaqt yarim tundan oshsa, ertangi kunga oʻtadi', () => {
+  const r = P.parse('10 daqiqadan keyin uxlash', { today: new Date(2026, 8, 28, 23, 55) });
+  assert.equal(r.date, '2026-09-29');
+  assert.equal(r.time, '00:05');
+});

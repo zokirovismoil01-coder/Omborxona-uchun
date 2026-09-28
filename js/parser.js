@@ -289,6 +289,36 @@
     return pad(hour) + ':' + pad(minute);
   }
 
+  // "5 daqiqadan keyin", "yarim soatdan so'ng", "2 kundan keyin"
+  const RELATIVE_UNIT = /^(daqiqa|minut|soat|kun|hafta)(dan|da|ga)?$/;
+  const AFTER_WORDS = new Set(['keyin', "so'ng", 'song', "o'tib", 'otib', "o'tgach", 'otgach']);
+  const UNIT_MINUTES = { daqiqa: 1, minut: 1, soat: 60, kun: 1440, hafta: 10080 };
+
+  function hasRelative(tokens) {
+    return tokens.some((t, i) => RELATIVE_UNIT.test(t) && AFTER_WORDS.has(tokens[i + 1]));
+  }
+
+  // Topilsa: {date, time, at} — at: eslatmaning aniq vaqti (ms)
+  function extractRelative(tokens, remove, now) {
+    for (let i = 0; i < tokens.length; i++) {
+      const run = tokens[i] === 'yarim'
+        ? { start: i, end: i + 1, value: 0.5, suffix: '' }
+        : readNumberRun(tokens, i);
+      if (!run || run.suffix) continue;
+      const unit = RELATIVE_UNIT.exec(tokens[run.end] || '');
+      if (!unit || !AFTER_WORDS.has(tokens[run.end + 1])) continue;
+      for (let k = run.start; k <= run.end + 1; k++) remove.add(k);
+      const minutes = run.value * UNIT_MINUTES[unit[1]];
+      if (minutes >= 1440) {
+        // Kunlar/haftalar: faqat sana o'zgaradi
+        return { date: dateKey(addDays(now, Math.round(minutes / 1440))), time: null, at: null };
+      }
+      const at = new Date(now.getTime() + Math.round(minutes * 60000));
+      return { date: dateKey(at), time: pad(at.getHours()) + ':' + pad(at.getMinutes()), at: at.getTime() };
+    }
+    return null;
+  }
+
   // ---------- Asosiy tahlil ----------
 
   function classify(tokens, runs) {
@@ -301,7 +331,7 @@
     const hasWeakDone = tokens.some((t) => DONE_WORDS.has(t));
     const needsDoing = tokens.some((t) => /^(kerak|eslat|lozim|shart|unutma)/.test(t));
     if (hasWeakDone && !moneyRuns.length && !needsDoing) return 'done';
-    if (hasTaskMarker) return 'task';
+    if (hasTaskMarker || hasRelative(tokens)) return 'task';
     if (!moneyRuns.length) return 'task';
     if (hasCurrency) return 'expense';
     if (hasExpenseMarker && moneyRuns.some((r) => r.value >= 100)) return 'expense';
@@ -313,7 +343,7 @@
   function isMoneyRun(tokens, r) {
     if (COUNT_SUFFIXES.has(r.suffix)) return false;
     const next = tokens[r.end];
-    if (next && COUNT_WORDS.has(next)) return false;
+    if (next && (COUNT_WORDS.has(next) || RELATIVE_UNIT.test(next))) return false;
     const prev = tokens[r.start - 1];
     if (prev && /^soat/.test(prev)) return false;
     if (/^\d{1,2}[:.]\d{2}$/.test(tokens[r.start])) return false;
@@ -368,7 +398,10 @@
         if (tokens[i + 1] === 'kuni' || tokens[i + 1] === 'kunga') remove.add(i + 1);
       }
     });
-    const time = extractTime(tokens, remove);
+    const rel = extractRelative(tokens, remove, ctx.today);
+    if (rel) date = rel.date;
+    const time = extractTime(tokens, remove) || (rel && rel.time);
+    const at = rel && rel.time === time ? rel.at : null;
     // Buyruq so'zlarini boshidan olib tashlash
     let rest = tokens.filter((_, i) => !remove.has(i));
     while (rest.length && /^(vazifa|eslatma|eslat|yangi|qo'sh|qosh|yoz)$/.test(rest[0])) rest.shift();
@@ -378,6 +411,7 @@
       text: capitalize(rest.join(' ')) || capitalize(tokens.join(' ')),
       date,
       time,
+      at,
     };
   }
 
