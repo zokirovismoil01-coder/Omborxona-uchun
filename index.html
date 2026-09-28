@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0f766e">
+  <meta name="description" content="O'zbekcha ovozli kundalik: vazifalar va xarajatlar hisobi">
+  <title>Kundalik yordamchi</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo" aria-hidden="true">🎙️</span>
+      <h1>Kundalik yordamchi</h1>
+    </div>
+    <button id="notifyBtn" class="icon-btn" title="Eslatmalarni yoqish" aria-label="Eslatmalarni yoqish">🔔</button>
+  </header>
+
+  <main class="container">
+    <nav class="datebar" aria-label="Sana">
+      <button id="prevDay" class="icon-btn" aria-label="Oldingi kun">‹</button>
+      <button id="dateLabel" class="date-label" title="Bugunga qaytish"></button>
+      <button id="nextDay" class="icon-btn" aria-label="Keyingi kun">›</button>
+    </nav>
+
+    <section class="summary">
+      <div class="stat">
+        <span class="stat-label">Vazifalar</span>
+        <span class="stat-value" id="statTasks">0 / 0</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Kunlik xarajat</span>
+        <span class="stat-value" id="statSpent">0 so'm</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Oylik xarajat</span>
+        <span class="stat-value" id="statMonth">0 so'm</span>
+      </div>
+    </section>
+
+    <section class="voice card">
+      <div class="modes" role="radiogroup" aria-label="Rejim">
+        <button class="mode active" data-mode="auto" role="radio" aria-checked="true">🤖 Avto</button>
+        <button class="mode" data-mode="task" role="radio" aria-checked="false">✅ Vazifa</button>
+        <button class="mode" data-mode="expense" role="radio" aria-checked="false">💰 Xarajat</button>
+      </div>
+
+      <button id="micBtn" class="mic" aria-label="Gapirish">
+        <span class="mic-icon" aria-hidden="true">🎤</span>
+      </button>
+      <p id="micStatus" class="mic-status">Tugmani bosib gapiring</p>
+      <p id="transcript" class="transcript" aria-live="polite"></p>
+
+      <form id="textForm" class="text-form">
+        <input id="textInput" type="text" autocomplete="off"
+               placeholder="Yoki yozing: non uchun 5000 so'm" aria-label="Matn kiritish">
+        <button type="submit" class="btn primary">Qo'shish</button>
+      </form>
+
+      <details class="help">
+        <summary>Qanday gapirish kerak?</summary>
+        <div class="help-body">
+          <p><b>Vazifa qo'shish:</b></p>
+          <ul>
+            <li>«Onamga qo'ng'iroq qilish»</li>
+            <li>«Ertaga soat 10 da bankka borishim kerak»</li>
+            <li>«Kechqurun soat yettida sport zalga borish»</li>
+            <li>«Juma kuni hisobot topshirish»</li>
+          </ul>
+          <p><b>Xarajat yozish:</b></p>
+          <ul>
+            <li>«Non uchun 5000 so'm sarfladim»</li>
+            <li>«Taksiga yigirma besh ming so'm berdim»</li>
+            <li>«Non 5000 so'm va sut 12 ming so'm»</li>
+            <li>«Kecha kafeda 60 ming so'm sarfladim»</li>
+          </ul>
+          <p><b>Vazifani bajarilgan deb belgilash:</b></p>
+          <ul>
+            <li>«Onamga qo'ng'iroq bajarildi»</li>
+          </ul>
+          <p class="muted">Dastur noto'g'ri tushunsa, yuqoridagi <b>Vazifa</b> yoki <b>Xarajat</b> rejimini tanlang yoki yozuvni bosib tahrirlang.</p>
+        </div>
+      </details>
+    </section>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="tasks" role="tab" aria-selected="true">Vazifalar</button>
+      <button class="tab" data-tab="expenses" role="tab" aria-selected="false">Xarajatlar</button>
+      <button class="tab" data-tab="report" role="tab" aria-selected="false">Hisobot</button>
+    </div>
+
+    <section id="tab-tasks" class="tab-panel card">
+      <div id="taskProgress" class="progress" hidden><div class="progress-bar"></div></div>
+      <ul id="taskList" class="list"></ul>
+      <p id="taskEmpty" class="empty">Bu kun uchun vazifa yo'q. Mikrofonni bosib ayting.</p>
+      <div id="overdueBox" hidden>
+        <h3 class="subhead">Oldingi kunlardan qolgan ishlar</h3>
+        <ul id="overdueList" class="list"></ul>
+      </div>
+    </section>
+
+    <section id="tab-expenses" class="tab-panel card" hidden>
+      <ul id="expenseList" class="list"></ul>
+      <p id="expenseEmpty" class="empty">Bu kun uchun xarajat yo'q.</p>
+      <div id="expenseTotal" class="total-row" hidden></div>
+    </section>
+
+    <section id="tab-report" class="tab-panel card" hidden>
+      <div class="report-head">
+        <button id="prevMonth" class="icon-btn" aria-label="Oldingi oy">‹</button>
+        <h2 id="monthLabel"></h2>
+        <button id="nextMonth" class="icon-btn" aria-label="Keyingi oy">›</button>
+      </div>
+      <p class="report-total">Jami: <b id="monthTotal">0 so'm</b></p>
+      <p class="muted" id="monthAvg"></p>
+      <h3 class="subhead">Toifalar bo'yicha</h3>
+      <ul id="categoryBars" class="bars"></ul>
+      <h3 class="subhead">Kunlar bo'yicha</h3>
+      <ul id="dayTotals" class="list compact"></ul>
+
+      <h3 class="subhead">Ma'lumotlar</h3>
+      <div class="actions">
+        <button id="exportCsv" class="btn">📄 Xarajatlarni Excel (CSV) ga yuklash</button>
+        <button id="exportJson" class="btn">💾 Zaxira nusxa olish</button>
+        <label class="btn file-btn">📂 Zaxiradan tiklash
+          <input id="importJson" type="file" accept="application/json,.json" hidden>
+        </label>
+      </div>
+      <p class="muted small">Ma'lumotlar faqat shu qurilmada (brauzerda) saqlanadi. Vaqti-vaqti bilan zaxira nusxa olib qo'ying.</p>
+    </section>
+  </main>
+
+  <dialog id="editDialog">
+    <form method="dialog" id="editForm">
+      <h2 id="editTitle">Tahrirlash</h2>
+      <div id="editFields"></div>
+      <div class="dialog-actions">
+        <button type="button" id="editDelete" class="btn danger">O'chirish</button>
+        <span class="spacer"></span>
+        <button value="cancel" class="btn" formnovalidate>Bekor</button>
+        <button value="save" class="btn primary">Saqlash</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toastText"></span>
+    <button id="toastAction" class="toast-action" hidden>Bekor qilish</button>
+  </div>
+
+  <script src="js/parser.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
