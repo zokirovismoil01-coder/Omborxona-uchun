@@ -9,11 +9,11 @@ def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
 // Veb-ilova fayllari (index.html, css, js, icons) repozitoriya ildizidan
 // APK ichiga assets/www sifatida ko'chiriladi.
 def webAssetsDir = file('web-assets')
-sync {
-    from(rootProject.file('..')) {
+project.sync { spec ->
+    spec.from(rootProject.file('..')) {
         include 'index.html', 'manifest.webmanifest', 'css/**', 'js/**', 'icons/**'
     }
-    into new File(webAssetsDir, 'www')
+    spec.into(new File(webAssetsDir, 'www'))
 }
 
 android {
