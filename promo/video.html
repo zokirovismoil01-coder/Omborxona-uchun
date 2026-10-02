@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>Kundalik yordamchi — reklama video</title>
+<!--
+  Reklama videosi: har bir kadr window.VIDEO.seek(t) orqali aniq chiziladi,
+  render.js esa kadrlarni ketma-ket suratga olib, ffmpeg bilan MP4 yig'adi.
+  Brauzerda ochsangiz video o'zi aylanib turadi:  video.html, video.html?format=vertical,
+  video.html?t=8.4 — aynan shu soniyadagi kadr.
+-->
+<style>
+@font-face { font-family: 'InterV'; src: url('fonts/inter-latin-opsz-normal.woff2') format('woff2'); font-weight: 100 900; font-style: normal; }
+@font-face { font-family: 'InterV'; src: url('fonts/inter-latin-opsz-italic.woff2') format('woff2'); font-weight: 100 900; font-style: italic; }
+
+:root {
+  --bg: #030605;
+  --ink: #eef6f4;
+  --muted: #8ea6a1;
+  --dim: #5d7470;
+  --teal: #2dd4bf;
+  --teal2: #14b8a6;
+  --teal3: #0f766e;
+  --mint: #5eead4;
+  --mint2: #ccfbf1;
+  --amber: #fcd34d;
+  --violet: #c4b5fd;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; overflow: hidden; }
+
+#stage {
+  position: relative;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'InterV', 'Noto Color Emoji', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+.landscape #stage { width: 1920px; height: 1080px; }
+.vertical #stage { width: 1080px; height: 1920px; }
+
+.scene { position: absolute; inset: 0; perspective: 1800px; display: none; }
+.c { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.w { display: inline-block; white-space: pre; }
+.vbr, .vgap { display: none; }
+.vertical .vbr { display: block; }
+.vertical .vgap { display: block; height: 58px; }
+.vertical .lbr { display: none; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* ---------- Nur (glow) ---------- */
+#glowWrap { position: absolute; inset: 0; pointer-events: none; }
+.glow { position: absolute; left: 0; top: 0; border-radius: 50%; mix-blend-mode: screen; }
+#glowA { background: radial-gradient(closest-side, rgba(20,184,166,.46), rgba(15,118,110,.30) 38%, rgba(13,95,88,.14) 66%, rgba(13,95,88,.05) 84%, rgba(13,95,88,0) 100%); }
+#glowB { background: radial-gradient(closest-side, rgba(94,234,212,.50), rgba(45,212,191,.26) 45%, rgba(45,212,191,.08) 75%, rgba(45,212,191,0) 100%); }
+#glowC { background: radial-gradient(closest-side, rgba(204,251,241,.55), rgba(94,234,212,.20) 55%, rgba(94,234,212,0) 100%); }
+
+#vignette { position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(ellipse 75% 70% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.55) 100%); }
+#grain { position: absolute; inset: -64px; pointer-events: none; opacity: .9; }
+#flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(240,253,250,1) 0%, rgba(153,246,228,.85) 25%, rgba(45,212,191,.45) 55%, rgba(15,118,110,0) 85%); }
+
+/* ---------- Logo ---------- */
+.logo-group { display: flex; align-items: center; gap: 40px; }
+.vertical .logo-group { flex-direction: column; gap: 44px; }
+.logo-icon { width: 150px; height: 150px; flex: none;
+  filter: drop-shadow(0 18px 50px rgba(45,212,191,.35)); }
+.logo-icon svg { width: 100%; height: 100%; display: block; }
+.logo-word { font-size: 104px; font-weight: 700; letter-spacing: -0.035em; white-space: nowrap; line-height: 1; }
+.vertical .logo-word { font-size: 96px; }
+.logo-word .ch { display: inline-block; white-space: pre; }
+.tagline { margin-top: 34px; font-size: 34px; font-weight: 500; color: var(--muted); letter-spacing: -0.01em; text-align: center; }
+.final-wrap { display: flex; flex-direction: column; align-items: center; }
+
+/* ---------- Telefon ---------- */
+.phone { width: 436px; height: 916px; }
+.phone-frame { position: absolute; inset: 0; padding: 12px; border-radius: 66px;
+  background: linear-gradient(150deg, #3a4241 0%, #121615 22%, #0a0c0c 60%, #262d2c 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.10), inset 0 0 0 5px #050606, 0 0 0 1px rgba(0,0,0,.9),
+              0 70px 140px rgba(0,0,0,.65), 0 0 120px rgba(45,212,191,.16); }
+.phone-btn { position: absolute; right: -4px; width: 5px; border-radius: 3px; background: #2a3130; }
+.phone-screen { position: relative; width: 412px; height: 892px; border-radius: 54px; overflow: hidden; background: #0f1514; }
+.statusbar { position: relative; height: 46px; display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 30px 0 34px; font-size: 16px; font-weight: 650; color: #fff; background: #0b3b36; }
+.punch { position: absolute; left: 50%; top: 12px; width: 24px; height: 24px; margin-left: -12px; border-radius: 50%; background: #000;
+  box-shadow: inset 0 0 0 3px #111, inset 4px -4px 6px rgba(80,120,140,.35); }
+.sb-icons { display: flex; gap: 6px; align-items: center; }
+.sb-icons svg { display: block; }
+
+/* Ilova (tungi rejim, css/style.css dan) */
+.app { --abg: #0f1514; --acard: #182120; --atext: #e6eeec; --amuted: #93a39f; --aline: #26322f; --aacc: #2dd4bf; --asoft: #123a35;
+  font-size: 16px; line-height: 1.45; color: var(--atext); background: var(--abg); height: calc(100% - 46px); }
+.app .topbar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; background: #0b3b36; color: #fff; }
+.app .brand { display: flex; align-items: center; gap: 8px; }
+.app .brand .lg { font-size: 1.3rem; }
+.app .brand h1 { font-size: 1.15rem; margin: 0; font-weight: 650; }
+.app .ib { width: 42px; height: 42px; display: grid; place-items: center; font-size: 1.3rem; }
+.app .container { padding: 12px 16px; }
+.app .card { background: var(--acard); border-radius: 14px; border: 1px solid var(--aline); padding: 16px; margin-bottom: 14px; }
+.app .datebar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+.app .datebar .ib { font-size: 1.5rem; color: var(--atext); }
+.app .date-label { font-weight: 600; font-size: 1.05rem; }
+.app .summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.app .stat { background: var(--acard); border: 1px solid var(--aline); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; }
+.app .stat-label { font-size: .75rem; color: var(--amuted); }
+.app .stat-value { font-weight: 700; font-size: 1rem; white-space: nowrap; }
+.app .voice { text-align: center; }
+.app .modes { display: inline-flex; background: var(--abg); border: 1px solid var(--aline); border-radius: 999px; padding: 3px; margin-bottom: 14px; }
+.app .mode { padding: 6px 12px; border-radius: 999px; font-size: .9rem; white-space: nowrap; }
+.app .mode.active { background: var(--aacc); color: #062a26; }
+.app .mic { width: 96px; height: 96px; border-radius: 50%; background: var(--aacc); display: grid; place-items: center; margin: 0 auto;
+  box-shadow: 0 6px 20px rgba(15,118,110,.35); }
+.app .mic-icon { font-size: 2.6rem; line-height: 1; }
+.app .mic-status { color: var(--amuted); margin: 10px 0 4px; font-size: .92rem; }
+.app .transcript { min-height: 1.5em; margin: 0 0 10px; font-style: italic; }
+.app .text-form { display: flex; gap: 8px; }
+.app .inp { flex: 1; min-width: 0; padding: 11px 12px; border-radius: 10px; border: 1px solid var(--aline); background: var(--abg);
+  color: #6f807c; font-size: 1rem; text-align: left; white-space: nowrap; overflow: hidden; }
+.app .btnp { background: var(--aacc); color: #062a26; padding: 11px 14px; border-radius: 10px; font-weight: 600; }
+.app .tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
+.app .tab { border: 1px solid var(--aline); background: var(--acard); padding: 10px 4px; border-radius: 10px; font-weight: 600; text-align: center; }
+.app .tab.active { background: var(--asoft); border-color: var(--aacc); color: var(--aacc); }
+.app .item { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-bottom: 1px solid var(--aline); }
+.app .check { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--aacc); display: grid; place-items: center; font-size: .85rem; flex: none; }
+.app .item.done .check { background: var(--aacc); color: #062a26; }
+.app .item.done .item-text { text-decoration: line-through; color: #5d6d69; }
+.app .item-body { flex: 1; min-width: 0; }
+.app .item-text { display: block; }
+.app .item-meta { display: block; font-size: .8rem; color: var(--amuted); }
+.app .time-badge { font-size: .8rem; font-weight: 650; color: var(--aacc); background: var(--asoft); border-radius: 6px; padding: 2px 6px; }
+.tap { width: 120px; height: 120px; border-radius: 50%; border: 3px solid rgba(255,255,255,.85); opacity: 0; }
+
+/* ---------- Iqtibos (gap) ---------- */
+.quote { font-size: 62px; font-weight: 560; letter-spacing: -0.025em; line-height: 1.25; white-space: nowrap; text-align: center; color: var(--ink); }
+.vertical .quote { font-size: 60px; }
+.quote .qm { color: var(--dim); display: inline-block; }
+.grp { position: relative; display: inline-block; white-space: nowrap; }
+.grp .bar { position: absolute; left: 2px; right: 2px; bottom: -6px; height: 6px; border-radius: 3px; background: currentColor;
+  transform-origin: 0 50%; transform: scaleX(0); box-shadow: 0 0 18px currentColor; }
+.grp .lab { position: absolute; left: 50%; top: calc(100% + 18px); font-size: 21px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; line-height: 1; opacity: 0; white-space: nowrap; }
+.morph { vertical-align: top; }
+.morph .from, .morph .to { position: absolute; left: 50%; top: 0; white-space: nowrap; }
+.morph .strut { display: inline-block; width: 0; }
+
+/* ---------- Kartochkalar ---------- */
+.glass { background: linear-gradient(180deg, rgba(255,255,255,.075), rgba(255,255,255,.03));
+  border: 1px solid rgba(255,255,255,.09); border-radius: 30px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.07), 0 40px 90px rgba(0,0,0,.45); }
+.layer { position: absolute; inset: 0; transform-style: preserve-3d; }
+.trow, .erow, .etotal { width: 900px; height: 124px; display: flex; align-items: center; gap: 28px; padding: 0 36px; }
+.vertical .trow, .vertical .erow, .vertical .etotal { width: 940px; }
+.trow .chk { width: 50px; height: 50px; flex: none; }
+.trow .chk svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.tbody { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.tbody b { font-size: 38px; font-weight: 620; letter-spacing: -0.02em; white-space: nowrap; }
+.tbody small { font-size: 23px; font-weight: 520; color: var(--muted); white-space: nowrap; }
+.trow.done .tbody b { text-decoration: line-through; color: var(--dim); }
+.trow.hero { border-color: rgba(94,234,212,.38);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.08), 0 40px 90px rgba(0,0,0,.5), 0 0 0 1px rgba(45,212,191,.12), 0 0 70px rgba(45,212,191,.20); }
+.t-teal { color: var(--teal) !important; }
+.badge { flex: none; font-size: 30px; font-weight: 700; padding: 10px 18px; border-radius: 16px; white-space: nowrap; }
+.badge.amber { color: var(--amber); background: rgba(252,211,77,.12); box-shadow: inset 0 0 0 1px rgba(252,211,77,.28); }
+.badge.dim { color: var(--muted); background: rgba(255,255,255,.05); }
+.ecat { width: 72px; height: 72px; flex: none; border-radius: 22px; display: grid; place-items: center; font-size: 38px;
+  background: rgba(255,255,255,.06); box-shadow: inset 0 0 0 1px rgba(255,255,255,.07); }
+.eamt { flex: none; font-size: 40px; font-weight: 700; letter-spacing: -0.02em; white-space: nowrap; text-align: right; }
+.eamt .num { display: inline-block; text-align: right; }
+.etotal { background: none; border: 0; box-shadow: none; height: 90px; }
+.etotal .lbl { flex: 1; font-size: 30px; font-weight: 600; color: var(--muted); }
+.etotal .eamt { color: var(--mint); font-size: 48px; text-shadow: 0 0 30px rgba(45,212,191,.35); }
+.etotal::before { content: ''; position: absolute; left: 36px; right: 36px; top: 0; height: 2px; background: rgba(255,255,255,.10); }
+
+/* ---------- Hisobot ---------- */
+.dash { width: 1560px; }
+.vertical .dash { width: 960px; }
+.dhead { display: flex; align-items: flex-end; justify-content: space-between; margin: 0 6px 28px; }
+.dhead small { display: block; font-size: 26px; color: var(--muted); font-weight: 560; margin-bottom: 6px; }
+.dhead h2 { margin: 0; font-size: 58px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+.dpill { display: flex; align-items: center; gap: 12px; font-size: 24px; font-weight: 600; color: var(--mint);
+  padding: 12px 22px; border-radius: 999px; background: rgba(45,212,191,.10); box-shadow: inset 0 0 0 1px rgba(45,212,191,.25); }
+.dpill i { width: 12px; height: 12px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 12px var(--mint); }
+.dgrid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 26px; }
+.vertical .dgrid { grid-template-columns: 1fr 1fr; }
+.vertical .dbig { grid-column: 1 / 3; }
+.dcard { padding: 34px 36px; min-height: 420px; display: flex; flex-direction: column; }
+.vertical .dcard { min-height: 400px; }
+.dcard h4 { margin: 0 0 22px; font-size: 26px; font-weight: 600; color: var(--muted); letter-spacing: -0.01em; }
+.dbars { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 18px; }
+.dbars li { display: grid; grid-template-columns: 1fr auto; row-gap: 9px; font-size: 25px; font-weight: 560; }
+.dbars .bv { color: var(--muted); font-variant-numeric: tabular-nums; }
+.dbars .bt { grid-column: 1 / 3; height: 12px; border-radius: 999px; background: rgba(255,255,255,.07); overflow: hidden; }
+.dbars .bf { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, var(--teal3), var(--teal) 70%, var(--mint)); box-shadow: 0 0 16px rgba(45,212,191,.5); }
+.dnum { font-size: 60px; font-weight: 700; letter-spacing: -0.03em; line-height: 1.05; white-space: nowrap; }
+.vertical .dnum { font-size: 54px; }
+.dnum .dim { color: var(--dim); }
+.dsub { font-size: 24px; color: var(--muted); font-weight: 520; margin-top: 6px; }
+.spark { margin-top: auto; width: 100%; height: 150px; display: block; overflow: visible; }
+.ring { width: 160px; height: 160px; margin: 6px 0 22px; display: block; overflow: visible; }
+.vertical .ring { width: 140px; height: 140px; }
+
+/* ---------- Kinetik matn ---------- */
+.kin { font-size: 118px; font-weight: 680; letter-spacing: -0.045em; line-height: 1.12; white-space: nowrap; text-align: center; }
+.vertical .kin { font-size: 116px; }
+.kin .acc { position: relative; }
+.kin .ul { position: absolute; left: 4px; right: 4px; bottom: -4px; height: 9px; border-radius: 5px; background: var(--mint);
+  transform-origin: 0 50%; transform: scaleX(0); box-shadow: 0 0 24px rgba(94,234,212,.8); }
+
+/* ---------- Bildirishnoma ---------- */
+.pill { width: 200px; height: 64px; border-radius: 999px; overflow: hidden; }
+.pill-content { position: absolute; left: 50%; top: 50%; display: flex; align-items: center; gap: 28px; white-space: nowrap; }
+.pill-icon { width: 92px; height: 92px; flex: none; }
+.pill-icon svg { width: 100%; height: 100%; display: block; }
+.pill-text small { display: block; font-size: 24px; color: var(--muted); font-weight: 560; margin-bottom: 6px; }
+.pill-text b { display: block; font-size: 38px; font-weight: 650; letter-spacing: -0.02em; }
+.vertical .pill-text b { font-size: 34px; }
+.dot { width: 30px; height: 30px; border-radius: 50%; background: var(--mint2); opacity: 0; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gIcon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#2dd4bf"/><stop offset=".55" stop-color="#14b8a6"/><stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+    <linearGradient id="gShine" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="gSpark" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2dd4bf" stop-opacity=".45"/><stop offset="1" stop-color="#2dd4bf" stop-opacity="0"/>
+    </linearGradient>
+    <symbol id="appIcon" viewBox="0 0 512 512">
+      <rect width="512" height="512" rx="116" fill="url(#gIcon)"/>
+      <rect width="512" height="512" rx="116" fill="url(#gShine)"/>
+      <rect x="1.5" y="1.5" width="509" height="509" rx="115" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="3"/>
+      <rect x="206" y="104" width="100" height="186" rx="50" fill="#fff"/>
+      <path d="M160 246a96 96 0 0 0 192 0" fill="none" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+      <path d="M256 342v56M200 408h112" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div id="stage">
+  <div id="glowWrap"><div class="glow" id="glowA"></div><div class="glow" id="glowB"></div><div class="glow" id="glowC"></div></div>
+
+  <!-- 1. Logo -->
+  <div class="scene" id="sLogo">
+    <div class="c logo-group" id="logo">
+      <div class="logo-icon" id="logoIcon"><svg><use href="#appIcon"/></svg></div>
+      <div class="logo-word split" id="logoWord">Kundalik yordamchi</div>
+    </div>
+  </div>
+
+  <!-- 2. Telefon -->
+  <div class="scene" id="sPhone">
+    <div class="c phone" id="phone">
+      <div class="phone-frame">
+        <div class="phone-btn" style="top:190px;height:70px"></div>
+        <div class="phone-btn" style="top:290px;height:110px"></div>
+        <div class="phone-screen">
+          <div class="statusbar">
+            <span>9:41</span><span class="punch"></span>
+            <span class="sb-icons">
+              <svg width="18" height="13" viewBox="0 0 18 13"><rect x="0" y="9" width="3" height="4" rx="1" fill="#fff"/><rect x="5" y="6" width="3" height="7" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="10" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="13" rx="1" fill="#fff"/></svg>
+              <svg width="18" height="13" viewBox="0 0 18 13"><path d="M9 12.5 L12 9 A4.6 4.6 0 0 0 6 9 Z" fill="#fff"/><path d="M2.6 5.6 A9 9 0 0 1 15.4 5.6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M5 8 A5.8 5.8 0 0 1 13 8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+              <svg width="27" height="13" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="#fff" stroke-opacity=".5" fill="none"/><rect x="2.5" y="2.5" width="16" height="8" rx="2" fill="#fff"/><rect x="24.5" y="4.5" width="2" height="4" rx="1" fill="#fff" fill-opacity=".5"/></svg>
+            </span>
+          </div>
+          <div class="app">
+            <div class="topbar">
+              <div class="brand"><span class="lg">🎙️</span><h1>Kundalik yordamchi</h1></div>
+              <span class="ib">🔔</span>
+            </div>
+            <div class="container">
+              <div class="datebar"><span class="ib">‹</span><span class="date-label">Bugun, 2-oktabr (juma)</span><span class="ib">›</span></div>
+              <div class="summary">
+                <div class="stat"><span class="stat-label">Vazifalar</span><span class="stat-value">1 / 3</span></div>
+                <div class="stat"><span class="stat-label">Kunlik xarajat</span><span class="stat-value">30 000 so'm</span></div>
+                <div class="stat"><span class="stat-label">Oylik xarajat</span><span class="stat-value">845 000 so'm</span></div>
+              </div>
+              <div class="card voice">
+                <div class="modes"><span class="mode active">🤖 Avto</span><span class="mode">✅ Vazifa</span><span class="mode">💰 Xarajat</span></div>
+                <div class="mic" id="pMic"><span class="mic-icon">🎤</span></div>
+                <p class="mic-status" id="pStatus">Tugmani bosib gapiring</p>
+                <p class="transcript" id="pTranscript"></p>
+                <div class="text-form"><span class="inp">Yoki yozing: non uchun 5000 so'm</span><span class="btnp">Qo'shish</span></div>
+              </div>
+              <div class="tabs"><span class="tab active">Vazifalar</span><span class="tab">Xarajatlar</span><span class="tab">Hisobot</span></div>
+              <div class="card" style="padding:4px 16px">
+                <div class="item done"><span class="check">✓</span><span class="item-body"><span class="item-text">Onamga qo'ng'iroq qilish</span></span></div>
+                <div class="item"><span class="check"></span><span class="item-body"><span class="item-text">Sport zalga borish</span><span class="item-meta">Kechqurun</span></span><span class="time-badge">19:00</span></div>
+                <div class="item"><span class="check"></span><span class="item-body"><span class="item-text">Dori ichish</span></span><span class="time-badge">21:00</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="c tap" id="tap"></div>
+  </div>
+
+  <!-- 3. Vazifa: gap tahlili -->
+  <div class="scene" id="sTask">
+    <div class="c quote" id="q1"><span class="qm">«</span><span class="grp" id="g1"><span class="w">Ertaga</span><i class="bar"></i><b class="lab">sana</b></span> <span class="grp" id="g2"><span class="w">soat</span> <span class="w">10</span> <span class="w">da</span><i class="bar"></i><b class="lab">vaqt</b></span><span class="vgap"></span><span class="lbr"> </span><span class="grp" id="g3"><span class="w">bankka</span> <span class="w">borishim</span> <span class="w">kerak</span><i class="bar"></i><b class="lab">vazifa</b></span><span class="qm">»</span></div>
+    <div class="layer" id="tLayer">
+      <div class="c trow glass done" id="tr0">
+        <span class="chk"><svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="23" fill="#2dd4bf"/><path d="M15 25.5l7 7 13-14" stroke="#062a26" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        <div class="tbody"><b>Onamga qoʻngʻiroq qilish</b><small>Bugun · bajarildi</small></div>
+      </div>
+      <div class="c trow glass hero" id="tr1">
+        <span class="chk"><svg viewBox="0 0 50 50"><circle id="heroRing" cx="25" cy="25" r="22.5" fill="none" stroke="#2dd4bf" stroke-width="4" stroke-linecap="round" transform="rotate(-90 25 25)"/></svg></span>
+        <div class="tbody"><b id="heroTitle">Bankka borishim kerak</b><small class="t-teal" id="heroDate">📅 Ertaga, 3-oktabr</small></div>
+        <span class="badge amber" id="heroBadge">⏰ 10:00</span>
+      </div>
+      <div class="c trow glass" id="tr2">
+        <span class="chk"><svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="22.5" fill="none" stroke="#2dd4bf" stroke-opacity=".7" stroke-width="4"/></svg></span>
+        <div class="tbody"><b>Sport zalga borish</b><small>Bugun, kechqurun</small></div>
+        <span class="badge dim">19:00</span>
+      </div>
+      <div class="c trow glass" id="tr3">
+        <span class="chk"><svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="22.5" fill="none" stroke="#2dd4bf" stroke-opacity=".7" stroke-width="4"/></svg></span>
+        <div class="tbody"><b>Hisobot topshirish</b><small>Juma, 9-oktabr</small></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Xarajatlar -->
+  <div class="scene" id="sExp">
+    <div class="c quote" id="q2"><span class="qm w">«</span><span class="w">Taksiga</span><span class="vgap"></span><span class="lbr"> </span><span class="grp morph" id="g4"><span class="strut">&#8203;</span><span class="from" id="g4from"><span class="w">yigirma</span> <span class="w">besh</span> <span class="w">ming</span> <span class="w">soʻm</span></span><span class="to" id="g4to"><span class="num" id="g4num">25 000</span> soʻm</span><i class="bar"></i><b class="lab">summa</b></span> <span class="w">berdim</span><span class="qm w">»</span></div>
+    <div class="c quote" id="q3"><span class="qm">«</span><span class="w">Non</span> <span class="w">uchun</span> <span class="grp" id="g5"><span class="w">5000</span> <span class="w">soʻm</span><i class="bar"></i></span> <span class="w">sarfladim</span><span class="qm">»</span></div>
+    <div class="layer" id="eLayer">
+      <div class="c erow glass" id="er1"><span class="ecat">🚕</span><div class="tbody"><b>Taksiga</b><small>Transport</small></div><span class="eamt"><span class="num" id="er1n">25 000</span> soʻm</span></div>
+      <div class="c erow glass" id="er2"><span class="ecat">🍞</span><div class="tbody"><b>Non</b><small>Oziq-ovqat</small></div><span class="eamt"><span class="num" id="er2n">5 000</span> soʻm</span></div>
+      <div class="c etotal" id="etot"><span class="lbl">Bugun jami</span><span class="eamt"><span class="num" id="etotn">30 000</span> soʻm</span></div>
+    </div>
+  </div>
+
+  <!-- 5. Hisobot -->
+  <div class="scene" id="sRep">
+    <div class="c dash" id="dash">
+      <div class="dhead" id="dhead"><div><small>Hisobot</small><h2>Oktabr 2026</h2></div><span class="dpill"><i></i>Oy boʻyicha</span></div>
+      <div class="dgrid">
+        <div class="dcard glass dbig" id="dc1">
+          <h4>Toifalar boʻyicha</h4>
+          <ul class="dbars" id="dbars">
+            <li data-v="38"><span>🍞 Oziq-ovqat</span><span class="bv">0%</span><div class="bt"><div class="bf"></div></div></li>
+            <li data-v="24"><span>🚕 Transport</span><span class="bv">0%</span><div class="bt"><div class="bf"></div></div></li>
+            <li data-v="18"><span>💡 Kommunal</span><span class="bv">0%</span><div class="bt"><div class="bf"></div></div></li>
+            <li data-v="12"><span>🎉 Koʻngilochar</span><span class="bv">0%</span><div class="bt"><div class="bf"></div></div></li>
+          </ul>
+        </div>
+        <div class="dcard glass" id="dc2">
+          <h4>Oylik xarajat</h4>
+          <div class="dnum"><span class="num" id="dcMonth">0</span></div>
+          <div class="dsub">soʻm · kuniga oʻrtacha 41 500</div>
+          <svg class="spark" viewBox="0 0 400 150" preserveAspectRatio="none">
+            <path id="sparkFill" d="M0 118 L40 104 L80 112 L120 82 L160 92 L200 60 L240 72 L280 46 L320 58 L360 28 L400 36 L400 150 L0 150 Z" fill="url(#gSpark)"/>
+            <path id="sparkLine" d="M0 118 L40 104 L80 112 L120 82 L160 92 L200 60 L240 72 L280 46 L320 58 L360 28 L400 36" fill="none" stroke="#5eead4" stroke-width="4" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+        </div>
+        <div class="dcard glass" id="dc3">
+          <h4>Vazifalar</h4>
+          <svg class="ring" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="66" fill="none" stroke="rgba(255,255,255,.08)" stroke-width="16"/>
+            <circle id="ringArc" cx="80" cy="80" r="66" fill="none" stroke="#2dd4bf" stroke-width="16" stroke-linecap="round" transform="rotate(-90 80 80)" style="filter:drop-shadow(0 0 10px rgba(45,212,191,.6))"/>
+            <text id="ringPct" x="80" y="92" text-anchor="middle" fill="#eef6f4" font-size="36" font-weight="700" font-family="InterV">0%</text>
+          </svg>
+          <div class="dnum"><span class="num" id="dcTasks">0</span><span class="dim"> / 15</span></div>
+          <div class="dsub">bajarildi</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. Kinetik matn -->
+  <div class="scene" id="sType">
+    <div class="c kin" id="k1"><span class="w">Gapiring</span> <span class="w">—</span><br class="vbr"><span class="lbr"> </span><span class="w acc" id="a1">yozib<i class="ul"></i></span> <span class="w">oladi</span></div>
+    <div class="c kin" id="k2"><span class="w">vaqti</span> <span class="w">kelganda</span><br class="vbr"><span class="lbr"> </span><span class="w acc" id="a2">eslatadi<i class="ul" id="ul2"></i></span></div>
+  </div>
+
+  <!-- 7. Eslatma -->
+  <div class="scene" id="sNote">
+    <div class="c pill" id="pill">
+      <div class="pill-content" id="pillContent">
+        <div class="pill-icon"><svg><use href="#appIcon"/></svg></div>
+        <div class="pill-text"><small>Kundalik yordamchi · hozir</small><b>⏰ Vaqti keldi: Bankka borishim kerak</b></div>
+      </div>
+    </div>
+    <div class="c dot" id="dot"></div>
+  </div>
+
+  <!-- 8. Yakun -->
+  <div class="scene" id="sFinal">
+    <div class="c final-wrap" id="final">
+      <div class="logo-group">
+        <div class="logo-icon" id="fIcon"><svg><use href="#appIcon"/></svg></div>
+        <div class="logo-word split" id="fWord">Kundalik yordamchi</div>
+      </div>
+      <div class="tagline" id="fTag">Oʻzbek tilidagi ovozli kundalik</div>
+    </div>
+  </div>
+
+  <div id="flash"></div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+</div>
+
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const params = new URLSearchParams(location.search);
+const V = params.get('format') === 'vertical';
+document.documentElement.classList.add(V ? 'vertical' : 'landscape');
+const W = V ? 1080 : 1920;
+const H = V ? 1920 : 1080;
+const FPS = 30;
+const DURATION = 26;
+
+// ---------- Yordamchi funksiyalar ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const E = {
+  lin: (t) => t,
+  inCubic: (t) => t * t * t,
+  outCubic: (t) => 1 - Math.pow(1 - t, 3),
+  inOutCubic: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  outQuint: (t) => 1 - Math.pow(1 - t, 5),
+  inOutQuint: (t) => (t < 0.5 ? 16 * t ** 5 : 1 - Math.pow(-2 * t + 2, 5) / 2),
+  outExpo: (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+  inExpo: (t) => (t <= 0 ? 0 : Math.pow(2, 10 * t - 10)),
+  outBack: (t) => { const c = 1.6; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+};
+// a..b oralig'idagi silliq 0→1
+const p = (t, a, b, ease = E.outCubic) => ease(clamp((t - a) / (b - a)));
+// [[vaqt, qiymat], ...] kalit kadrlar
+function kf(t, keys, ease = E.inOutCubic) {
+  if (t <= keys[0][0]) return keys[0][1];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const [t0, v0] = keys[i];
+    const [t1, v1] = keys[i + 1];
+    if (t <= t1) return lerp(v0, v1, ease(clamp((t - t0) / (t1 - t0))));
+  }
+  return keys[keys.length - 1][1];
+}
+function tf(el, o = {}) {
+  const { x = 0, y = 0, s = 1, sx = 1, sy = 1, rx = 0, ry = 0, rz = 0, op = 1, blur = 0 } = o;
+  const c = el.classList.contains('c') ? 'translate(-50%,-50%) ' : '';
+  let tr = `${c}translate(${x.toFixed(2)}px,${y.toFixed(2)}px)`;
+  if (rx || ry || rz) tr += ` rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg) rotateZ(${rz.toFixed(3)}deg)`;
+  tr += ` scale(${(s * sx).toFixed(4)},${(s * sy).toFixed(4)})`;
+  el.style.transform = tr;
+  el.style.opacity = clamp(op).toFixed(3);
+  el.style.filter = blur > 0.15 ? `blur(${blur.toFixed(2)}px)` : 'none';
+  el.style.visibility = op <= 0.002 ? 'hidden' : 'visible';
+}
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+const mix = (a, b, t) => { const A = hex(a), B = hex(b); return `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], t))).join(',')})`; };
+const money = (n) => Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+const words = (el) => [...el.querySelectorAll('.w')];
+
+// Harflarga bo'lish (logo uchun)
+document.querySelectorAll('.split').forEach((el) => {
+  el.innerHTML = [...el.textContent].map((ch) => `<span class="ch">${ch}</span>`).join('');
+});
+
+// ---------- Elementlar ----------
+const scenes = {
+  logo: [$('sLogo'), 0.0, 3.35],
+  phone: [$('sPhone'), 2.85, 6.85],
+  task: [$('sTask'), 6.35, 9.75],
+  exp: [$('sExp'), 9.5, 13.45],
+  rep: [$('sRep'), 13.2, 16.35],
+  type: [$('sType'), 16.2, 20.5],
+  note: [$('sNote'), 19.85, 22.75],
+  final: [$('sFinal'), 22.3, DURATION],
+};
+
+const L = V ? {
+  phoneS: 1.42, phoneY: 10, quoteY: -40, quoteUpY: -560, quoteUpS: 0.78, listY: 60, gap: 168,
+  eY: [-170, -6, 150], glowW: 2000, glowH: 2300, pillW: 920, pillH: 170,
+} : {
+  phoneS: 0.95, phoneY: 0, quoteY: -30, quoteUpY: -330, quoteUpS: 0.72, listY: 40, gap: 150,
+  eY: [-120, 24, 160], glowW: 2500, glowH: 1500, pillW: 900, pillH: 160,
+};
+
+// ---------- O'lchovlar (dinamik pozitsiyalar uchun) ----------
+// Sahnalarni vaqtincha ko'rsatib, elementlarning tinch holatdagi joyini o'lchaymiz.
+const M = {};
+function measure() {
+  Object.values(scenes).forEach(([el]) => (el.style.display = 'block'));
+  const st = $('stage').getBoundingClientRect();
+  const center = (r) => ({ x: r.left + r.width / 2 - st.left - W / 2, y: r.top + r.height / 2 - st.top - H / 2, w: r.width, h: r.height });
+  const ph = $('phone').getBoundingClientRect();
+  const local = (el) => { const r = el.getBoundingClientRect(); return { x: r.left + r.width / 2 - (ph.left + ph.width / 2), y: r.top + r.height / 2 - (ph.top + ph.height / 2) }; };
+  M.mic = local($('pMic'));
+  M.transcript = local($('pTranscript'));
+  M.transcript.y += 6;
+  tf($('k2'), { y: 0 });
+  $('ul2').style.transform = 'none';
+  M.ul2 = center($('ul2').getBoundingClientRect());
+  $('ul2').style.transform = '';
+  M.g4from = $('g4from').getBoundingClientRect().width;
+  M.g4to = $('g4to').getBoundingClientRect().width;
+  M.heroRing = $('heroRing').getTotalLength();
+  M.spark = $('sparkLine').getTotalLength();
+  M.ring = $('ringArc').getTotalLength();
+  Object.values(scenes).forEach(([el]) => (el.style.display = 'none'));
+}
+
+// ---------- Fon nuri ----------
+// [vaqt, x, y (ekran ulushi), o'lcham, yorqinlik]
+const GLOW = [
+  [0.0, 0.5, 1.22, 0.75, 0.0],
+  [1.5, 0.5, 0.96, 1.0, 1.0],
+  [2.8, 0.5, 0.92, 1.0, 0.92],
+  [4.0, 0.5, 0.74, 1.05, 1.0],
+  [6.6, 0.5, 0.62, 0.95, 0.92],
+  [9.6, 0.5, 0.68, 1.0, 0.9],
+  [13.2, 0.36, 0.82, 1.15, 1.0],
+  [16.2, 0.5, 0.8, 1.1, 1.0],
+  [20.0, 0.5, 0.56, 0.8, 0.85],
+  [22.15, 0.5, 0.52, 0.55, 1.0],
+  [22.5, 0.5, 0.55, 1.25, 1.35],
+  [23.3, 0.5, 0.92, 1.0, 1.0],
+  [25.0, 0.5, 0.95, 1.0, 0.9],
+  [25.7, 0.5, 1.02, 0.9, 0.0],
+];
+function updGlow(t) {
+  const idx = Math.max(0, GLOW.findIndex((k) => k[0] > t) - 1);
+  const a = GLOW[Math.min(idx, GLOW.length - 1)];
+  const b = GLOW[Math.min(idx + 1, GLOW.length - 1)];
+  const k = a === b ? 0 : E.inOutCubic(clamp((t - a[0]) / (b[0] - a[0])));
+  const gx = lerp(a[1], b[1], k) * W, gy = lerp(a[2], b[2], k) * H;
+  const sc = lerp(a[3], b[3], k);
+  const breathe = 1 + 0.045 * Math.sin((t / 2.4) * Math.PI * 2);
+  const it = clamp(lerp(a[4], b[4], k) * breathe, 0, 1.5);
+  const place = (el, w, h, s, o, dy = 0) => {
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.transform = `translate(${(gx - w / 2).toFixed(1)}px,${(gy - h / 2 + dy).toFixed(1)}px) scale(${s.toFixed(4)})`;
+    el.style.opacity = clamp(o).toFixed(3);
+  };
+  place($('glowA'), L.glowW, L.glowH, sc, it);
+  place($('glowB'), L.glowW * 0.48, L.glowH * 0.5, sc * (0.96 + 0.04 * breathe), it * 0.95, H * 0.03);
+  place($('glowC'), L.glowW * 0.17, L.glowH * 0.18, sc, Math.max(0, it - 0.15) * 0.9, H * 0.05);
+}
+
+// ---------- Donador (grain) ----------
+const grainTiles = [];
+(function makeGrain() {
+  for (let n = 0; n < 6; n++) {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 256;
+    const g = cv.getContext('2d');
+    const img = g.createImageData(256, 256);
+    let seed = 1234 + n * 7919;
+    for (let i = 0; i < img.data.length; i += 4) {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      const v = seed >>> 24;
+      img.data[i] = img.data[i + 1] = img.data[i + 2] = v;
+      img.data[i + 3] = 5;
+    }
+    g.putImageData(img, 0, 0);
+    grainTiles.push(`url(${cv.toDataURL()})`);
+  }
+})();
+function updGrain(t) {
+  const f = Math.floor(Math.round(t * FPS) / 2);
+  const el = $('grain');
+  el.style.backgroundImage = grainTiles[f % grainTiles.length];
+  el.style.backgroundPosition = `${(f * 97) % 256}px ${(f * 61) % 256}px`;
+}
+
+// ---------- 1. Logo ----------
+const logoChars = [...$('logoWord').children];
+function updLogo(t) {
+  const out = p(t, 2.55, 3.25, E.inCubic);
+  const a = p(t, 0.3, 1.35, E.outExpo);
+  tf($('logo'), { s: lerp(0.965, 1, p(t, 0, 2.6)) * lerp(1, 1.1, out) });
+  tf($('logoIcon'), { s: lerp(0.55, 1, a), op: a * (1 - out), blur: (1 - a) * 22 + out * 22 });
+  logoChars.forEach((el, i) => {
+    const b = p(t, 0.72 + i * 0.028, 1.42 + i * 0.028, E.outCubic);
+    tf(el, { y: (1 - b) * 46 - out * 16, op: b * (1 - out), blur: (1 - b) * 12 + out * 18 });
+  });
+}
+
+// ---------- 2. Telefon ----------
+const TRANSCRIPT = ['Ertaga', 'soat', '10', 'da', 'bankka', 'borishim', 'kerak'];
+function updPhone(t) {
+  const e = p(t, 2.9, 4.1, E.outExpo);
+  const settle = p(t, 3.5, 5.6, E.inOutCubic);
+  const push = p(t, 5.72, 6.8, E.inOutQuint);
+  const s0 = L.phoneS * lerp(0.84, 1, e);
+  const s = lerp(s0, L.phoneS * 2.9, push);
+  // telefon nuqtasi (transcript) ekran markaziga yaqinlashadi
+  const px = M.transcript.x, py = M.transcript.y;
+  const restX = 0, restY = lerp(V ? 1400 : 1000, L.phoneY, e);
+  const tx = lerp(restX + s0 * px, 0, push) - s * px;
+  const ty = lerp(restY + s0 * py, L.quoteY, push) - s * py;
+  tf($('phone'), {
+    x: tx, y: ty, s,
+    rx: lerp(46, 12, e) * (1 - settle),
+    ry: lerp(-26, -12, e) * (1 - settle),
+    rz: lerp(7, 0, e),
+    op: 1 - p(t, 6.4, 6.8, E.inCubic),
+    blur: (1 - e) * 14 + p(t, 6.3, 6.8, E.inCubic) * 18,
+  });
+
+  // mikrofon bosiladi
+  const micX = tx + s * M.mic.x, micY = ty + s * M.mic.y;
+  const tp = p(t, 4.12, 4.75, E.outCubic);
+  tf($('tap'), { x: micX, y: micY, s: lerp(0.35, 1.7, tp) * (s / L.phoneS), op: t < 4.12 ? 0 : 0.85 * (1 - tp) });
+  const mic = $('pMic');
+  const listening = t >= 4.2 && t < 5.62;
+  const press = 1 - 0.1 * Math.sin(Math.PI * clamp((t - 4.1) / 0.24));
+  mic.style.transform = `scale(${press.toFixed(4)})`;
+  mic.style.background = listening ? '#dc2626' : '';
+  if (listening) {
+    const ring = (ph) => { const q = clamp(ph / 0.7); return `0 0 0 ${(22 * E.outCubic(q)).toFixed(2)}px rgba(220,38,38,${(0.55 * (1 - q)).toFixed(3)})`; };
+    const ph = ((t - 4.2) % 1.2) / 1.2;
+    const ph2 = ((t - 4.2 + 0.6) % 1.2) / 1.2;
+    mic.style.boxShadow = `${ring(ph)}, ${t > 4.8 ? ring(ph2) : '0 0 0 0 transparent'}`;
+  } else {
+    mic.style.boxShadow = '';
+  }
+  $('pStatus').textContent = listening ? 'Eshitayapman… gapiring' : 'Tugmani bosib gapiring';
+  const n = t < 4.42 ? 0 : Math.min(TRANSCRIPT.length, 1 + Math.floor((t - 4.42) / 0.155));
+  $('pTranscript').textContent = n ? '«' + TRANSCRIPT.slice(0, n).join(' ') + '»' : '';
+}
+
+// ---------- 3. Vazifa ----------
+const GRP_COLORS = { g1: '#2dd4bf', g2: '#fcd34d', g3: '#c4b5fd' };
+function annotate(id, t0, t, color, labelOp = 1) {
+  const g = $(id);
+  const a = p(t, t0, t0 + 0.4, E.outCubic);
+  g.style.color = mix('#eef6f4', color, a);
+  const bar = g.querySelector('.bar');
+  bar.style.transform = `scaleX(${p(t, t0, t0 + 0.5, E.outExpo).toFixed(4)})`;
+  const lab = g.querySelector('.lab');
+  if (lab) {
+    const b = p(t, t0 + 0.08, t0 + 0.5, E.outCubic);
+    lab.style.transform = `translate(-50%, ${((1 - b) * 14).toFixed(2)}px)`;
+    lab.style.opacity = (b * labelOp).toFixed(3);
+    lab.style.filter = b < 0.98 ? `blur(${((1 - b) * 6).toFixed(2)}px)` : 'none';
+  }
+}
+function updTask(t) {
+  const out = p(t, 9.3, 9.72, E.inCubic);
+  const enter = p(t, 6.42, 7.0, E.outCubic);
+  const up = p(t, 7.95, 8.6, E.inOutCubic);
+  tf($('q1'), {
+    y: lerp(L.quoteY, L.quoteUpY, up) - out * 50,
+    s: lerp(1.14, 1, enter) * lerp(1, L.quoteUpS, up) * lerp(1, 1.06, out),
+    op: enter * (1 - out),
+    blur: (1 - enter) * 14 + out * 18,
+  });
+  annotate('g1', 7.0, t, GRP_COLORS.g1);
+  annotate('g2', 7.25, t, GRP_COLORS.g2);
+  annotate('g3', 7.5, t, GRP_COLORS.g3);
+
+  const drift = p(t, 8.0, 10.0, E.lin);
+  tf($('tLayer'), { rx: lerp(10, 4, drift), ry: lerp(-7, -2, drift), s: lerp(1, 1.03, drift) });
+  const row = (id, t0, y, op, blur, sc) => {
+    const a = p(t, t0, t0 + 0.6, E.outExpo);
+    tf($(id), { y: y + (1 - a) * 90 - out * 50, s: sc * lerp(0.9, 1, a) * lerp(1, 1.08, out), op: a * op * (1 - out), blur: (1 - a) * 16 + blur + out * 18 });
+  };
+  row('tr0', 8.18, L.listY - L.gap, 0.42, 5, 0.94);
+  row('tr1', 8.05, L.listY, 1, 0, 1);
+  row('tr2', 8.28, L.listY + L.gap, 0.4, 5, 0.94);
+  row('tr3', 8.38, L.listY + L.gap * 2, 0.26, 9, 0.9);
+  $('heroRing').style.strokeDasharray = M.heroRing;
+  $('heroRing').style.strokeDashoffset = (M.heroRing * (1 - p(t, 8.3, 8.85, E.outCubic))).toFixed(2);
+  const bp = p(t, 8.35, 8.8, E.outBack);
+  tf($('heroBadge'), { s: lerp(0.5, 1, bp), op: p(t, 8.35, 8.55) });
+  tf($('heroDate'), { x: (1 - p(t, 8.25, 8.7)) * -16, op: p(t, 8.25, 8.7) });
+}
+
+// ---------- 4. Xarajatlar ----------
+function wordsIn(el, t0, t, step = 0.045) {
+  words(el).forEach((w, i) => {
+    const a = p(t, t0 + i * step, t0 + i * step + 0.5, E.outCubic);
+    tf(w, { y: (1 - a) * 26, op: a, blur: (1 - a) * 10 });
+  });
+}
+function updExp(t) {
+  const out = p(t, 12.98, 13.4, E.inCubic);
+  // 1-gap: «Taksiga yigirma besh ming so'm berdim»
+  const q2in = p(t, 9.55, 10.05, E.outCubic);
+  const q2up = p(t, 11.0, 11.5, E.inOutCubic);
+  const q2out = p(t, 11.72, 12.05, E.inCubic);
+  tf($('q2'), {
+    y: lerp(L.quoteY + 30 * (1 - q2in), L.quoteUpY, q2up) - q2out * 40,
+    s: lerp(1, L.quoteUpS, q2up),
+    op: (t < 9.55 ? 0 : 1) * (1 - q2out),
+    blur: q2out * 12,
+  });
+  wordsIn($('q2'), 9.55, t);
+  annotate('g4', 10.15, t, '#fcd34d');
+  const m = p(t, 10.5, 10.95, E.inOutCubic);
+  $('g4').style.width = lerp(M.g4from, M.g4to, m).toFixed(2) + 'px';
+  const fo = p(t, 10.48, 10.75, E.inCubic);
+  $('g4from').style.transform = `translateX(-50%) scale(${lerp(1, 0.86, fo).toFixed(4)})`;
+  $('g4from').style.opacity = (1 - fo).toFixed(3);
+  $('g4from').style.filter = fo > 0.02 ? `blur(${(fo * 10).toFixed(2)}px)` : 'none';
+  const ti = p(t, 10.68, 11.0, E.outCubic);
+  $('g4to').style.transform = `translateX(-50%) scale(${lerp(1.18, 1, ti).toFixed(4)})`;
+  $('g4to').style.opacity = ti.toFixed(3);
+  $('g4to').style.filter = ti < 0.98 ? `blur(${((1 - ti) * 10).toFixed(2)}px)` : 'none';
+  $('g4num').textContent = money(25000 * p(t, 10.68, 11.05, E.outCubic));
+
+  // 2-gap: «Non uchun 5000 so'm sarfladim»
+  const q3in = p(t, 11.85, 12.25, E.outCubic);
+  tf($('q3'), { y: L.quoteUpY + (1 - q3in) * 30 - out * 50, s: L.quoteUpS * lerp(1, 1.06, out), op: q3in * (1 - out), blur: (1 - q3in) * 12 + out * 18 });
+  annotate('g5', 12.0, t, '#fcd34d');
+
+  const row = (id, t0, y) => {
+    const a = p(t, t0, t0 + 0.6, E.outExpo);
+    tf($(id), { y: y + (1 - a) * 90 - out * 50, s: lerp(0.9, 1, a) * lerp(1, 1.08, out), op: a * (1 - out), blur: (1 - a) * 16 + out * 18 });
+  };
+  const drift = p(t, 11.0, 13.6, E.lin);
+  tf($('eLayer'), { rx: lerp(9, 3, drift), ry: lerp(6, 2, drift) });
+  row('er1', 11.05, L.eY[0]);
+  row('er2', 12.1, L.eY[1]);
+  row('etot', 12.55, L.eY[2]);
+  $('er1n').textContent = money(25000 * p(t, 11.12, 11.45, E.outCubic));
+  $('er2n').textContent = money(5000 * p(t, 12.17, 12.45, E.outCubic));
+  $('etotn').textContent = money(30000 * p(t, 12.6, 12.95, E.outCubic));
+}
+
+// ---------- 5. Hisobot ----------
+const bars = [...$('dbars').children];
+function updRep(t) {
+  const e = p(t, 13.25, 14.2, E.outExpo);
+  const drift = p(t, 13.8, 16.35, E.lin);
+  const out = p(t, 15.82, 16.3, E.inCubic);
+  tf($('dash'), {
+    y: (1 - e) * 160,
+    rx: lerp(24, 9, e) - 6 * drift,
+    ry: lerp(-16, -6, e) + 5 * drift,
+    s: lerp(0.88, 1, e) * lerp(1, 1.035, drift) * lerp(1, 1.25, out),
+    op: e * (1 - out),
+    blur: (1 - e) * 18 + out * 22,
+  });
+  tf($('dhead'), { y: (1 - p(t, 13.45, 14)) * 24, op: p(t, 13.45, 14) });
+  ['dc1', 'dc2', 'dc3'].forEach((id, i) => {
+    const a = p(t, 13.5 + i * 0.13, 14.15 + i * 0.13, E.outCubic);
+    tf($(id), { y: (1 - a) * 60, op: a, blur: (1 - a) * 10 });
+  });
+  bars.forEach((li, i) => {
+    const v = +li.dataset.v;
+    const a = p(t, 13.9 + i * 0.09, 14.8 + i * 0.09, E.outExpo);
+    li.querySelector('.bf').style.width = (a * v * 2.2).toFixed(2) + '%';
+    li.querySelector('.bv').textContent = Math.round(a * v) + '%';
+  });
+  $('dcMonth').textContent = money(1245000 * p(t, 13.95, 15.05, E.outExpo));
+  const sp = p(t, 14, 15.1, E.outCubic);
+  $('sparkLine').style.strokeDasharray = M.spark;
+  $('sparkLine').style.strokeDashoffset = (M.spark * (1 - sp)).toFixed(2);
+  $('sparkFill').style.opacity = p(t, 14.4, 15.2).toFixed(3);
+  const rp = p(t, 14.05, 15.15, E.outCubic) * 0.8;
+  $('ringArc').style.strokeDasharray = `${(M.ring * rp).toFixed(2)} ${M.ring}`;
+  $('ringArc').style.opacity = rp > 0.004 ? 1 : 0;
+  $('ringPct').textContent = Math.round(rp * 100) + '%';
+  $('dcTasks').textContent = Math.round(rp / 0.8 * 12);
+}
+
+// ---------- 6. Kinetik matn ----------
+function kinetic(el, accId, t0, tAcc, tOut, t, keepUnderline = false) {
+  const out = p(t, tOut, tOut + 0.38, E.inCubic);
+  tf(el, { op: t < t0 - 0.05 ? 0 : 1 });
+  words(el).forEach((w, i) => {
+    const a = p(t, t0 + i * 0.12, t0 + i * 0.12 + 0.6, E.outExpo);
+    const o = p(t, tOut + i * 0.04, tOut + i * 0.04 + 0.34, E.inCubic);
+    tf(w, { y: (1 - a) * 56 - o * 36, op: a * (1 - o), blur: (1 - a) * 16 + o * 16 });
+  });
+  const acc = $(accId);
+  const ac = p(t, tAcc, tAcc + 0.4, E.outCubic);
+  acc.style.color = mix('#eef6f4', '#5eead4', ac);
+  acc.style.textShadow = `0 0 ${(40 * ac).toFixed(1)}px rgba(45,212,191,${(0.45 * ac).toFixed(3)})`;
+  const ul = acc.querySelector('.ul');
+  ul.style.transform = `scaleX(${p(t, tAcc + 0.05, tAcc + 0.6, E.outExpo).toFixed(4)})`;
+  ul.style.opacity = keepUnderline ? (t < tOut + 0.1 ? 1 : 0) : 1;
+  return out;
+}
+function updType(t) {
+  kinetic($('k1'), 'a1', 16.3, 16.9, 17.85, t);
+  kinetic($('k2'), 'a2', 18.05, 18.6, 19.9, t, true);
+}
+
+// ---------- 7. Eslatma ----------
+function updNote(t) {
+  const pill = $('pill');
+  const a = p(t, 19.95, 20.45, E.inOutCubic);   // chiziq → kichik kapsula
+  const b = p(t, 20.42, 20.95, E.outExpo);      // kapsula kengayadi
+  const c = p(t, 21.68, 22.08, E.inOutCubic);   // yig'iladi
+  const d = p(t, 22.02, 22.18, E.inOutCubic);   // nuqtaga aylanadi
+  let w = lerp(M.ul2.w, 190, a), h = lerp(9, 66, a);
+  w = lerp(w, L.pillW, b); h = lerp(h, L.pillH, b);
+  w = lerp(w, 70, c); h = lerp(h, 70, c);
+  w = lerp(w, 30, d); h = lerp(h, 30, d);
+  const x = lerp(M.ul2.x, 0, a), y = lerp(M.ul2.y, 0, a);
+  pill.style.width = w.toFixed(2) + 'px';
+  pill.style.height = h.toFixed(2) + 'px';
+  const fillT = p(t, 20.1, 20.5) * (1 - p(t, 21.9, 22.15));
+  pill.style.background = `rgba(${Math.round(lerp(94, 6, fillT))},${Math.round(lerp(234, 22, fillT))},${Math.round(lerp(212, 20, fillT))},${lerp(1, 0.84, fillT).toFixed(3)})`;
+  const glowK = 0.7 + 0.3 * Math.sin((t - 20.5) * 5.2);
+  const bw = lerp(0, 2.5, fillT);
+  pill.style.boxShadow = `inset 0 0 0 ${bw.toFixed(2)}px rgba(94,234,212,.95), 0 0 ${(30 + 30 * glowK).toFixed(1)}px rgba(45,212,191,${(0.55 * glowK).toFixed(3)}), 0 0 140px rgba(45,212,191,.25), inset 0 0 40px rgba(45,212,191,${(0.18 * fillT).toFixed(3)})`;
+  const hide = t < 19.95 || t > 22.17;
+  tf(pill, { x, y, op: hide ? 0 : 1 });
+  const ci = p(t, 20.62, 21.0, E.outCubic) * (1 - p(t, 21.6, 21.82, E.inCubic));
+  const pc = $('pillContent');
+  pc.style.transform = `translate(-50%,-50%) translateY(${((1 - ci) * 10).toFixed(2)}px) scale(${lerp(0.94, 1, ci).toFixed(4)})`;
+  pc.style.opacity = ci.toFixed(3);
+  pc.style.filter = ci < 0.98 ? `blur(${((1 - ci) * 10).toFixed(2)}px)` : 'none';
+
+  // yorqin nuqta va chaqnash
+  const dot = $('dot');
+  const dp = 1 + 0.25 * Math.sin(Math.PI * clamp((t - 22.17) / 0.2));
+  const fl = p(t, 22.36, 22.62, E.inExpo);
+  tf(dot, { s: dp * lerp(1, 46, fl), op: t < 22.17 ? 0 : 1 - p(t, 22.5, 22.7) });
+  dot.style.boxShadow = `0 0 24px 8px rgba(153,246,228,.9), 0 0 90px 30px rgba(45,212,191,.55)`;
+}
+function updFlash(t) {
+  const fo = p(t, 22.36, 22.5, E.outCubic) * (1 - p(t, 22.55, 23.1, E.outCubic));
+  $('flash').style.opacity = (fo * 0.9).toFixed(3);
+}
+
+// ---------- 8. Yakun ----------
+const fChars = [...$('fWord').children];
+function updFinal(t) {
+  const a = p(t, 22.42, 23.2, E.outExpo);
+  const fade = p(t, 24.95, 25.65, E.inOutCubic);
+  tf($('final'), { s: lerp(1, 1.045, p(t, 22.4, 25.7, E.lin)), op: 1 - fade, blur: fade * 6 });
+  tf($('fIcon'), { s: lerp(1.3, 1, a), op: a, blur: (1 - a) * 18 });
+  fChars.forEach((el, i) => {
+    const b = p(t, 22.6 + i * 0.024, 23.25 + i * 0.024, E.outCubic);
+    tf(el, { y: (1 - b) * 36, op: b, blur: (1 - b) * 10 });
+  });
+  const g = p(t, 23.35, 23.95, E.outCubic);
+  tf($('fTag'), { y: (1 - g) * 18, op: g * 0.95, blur: (1 - g) * 8 });
+}
+
+const UPDATE = { logo: updLogo, phone: updPhone, task: updTask, exp: updExp, rep: updRep, type: updType, note: updNote, final: updFinal };
+
+function seek(t) {
+  updGlow(t);
+  updGrain(t);
+  updFlash(t);
+  for (const [name, [el, a, b]] of Object.entries(scenes)) {
+    const on = t >= a && t <= b;
+    el.style.display = on ? 'block' : 'none';
+    if (on) UPDATE[name](t);
+  }
+}
+
+// Ovoz effektlari uchun vaqt belgilari (audio.js shu ro'yxatdan foydalanadi)
+const CUES = [
+  ['swell', 0.0], ['impact', 1.0], ['shimmer', 1.05],
+  ['whoosh', 2.95], ['tap', 4.14], ['listenOn', 4.2], ['listenOff', 5.62],
+  ['whoosh', 5.95], ['tick', 7.0], ['tick', 7.25], ['tick', 7.5], ['ding', 8.4],
+  ['whoosh', 9.3], ['tick', 10.15], ['morph', 10.55], ['coin', 11.42], ['tick', 12.0], ['coin', 12.42], ['count', 12.6],
+  ['whoosh', 12.98], ['impact', 13.35], ['tick', 13.5], ['tick', 13.63], ['tick', 13.76],
+  ['whoosh', 15.85], ['pop', 16.9], ['whoosh', 17.95], ['pop', 18.6],
+  ['riser', 19.9], ['chime', 20.5], ['collapse', 21.7], ['flash', 22.38], ['shimmer', 22.45],
+];
+
+window.VIDEO = { W, H, FPS, DURATION, seek, CUES, format: V ? 'vertical' : 'landscape' };
+
+// O'lchashdan oldin shrift aniq yuklangan bo'lishi shart, aks holda matn kengligi noto'g'ri chiqadi
+Promise.all([document.fonts.load('600 40px InterV'), document.fonts.load('italic 400 16px InterV')])
+  .then(() => document.fonts.ready)
+  .then(() => {
+    measure();
+    const fixed = params.get('t');
+    if (params.has('render')) {
+      seek(0);
+    } else if (fixed !== null) {
+      seek(parseFloat(fixed));
+    } else {
+      // Oddiy ko'rish: video aylanib turadi
+      const start = performance.now();
+      const loop = (now) => { seek(((now - start) / 1000) % DURATION); requestAnimationFrame(loop); };
+      requestAnimationFrame(loop);
+    }
+    window.VIDEO.ready = true;
+  });
+</script>
+</body>
+</html>

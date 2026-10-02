@@ -1,0 +1,13 @@
+{
+  "name": "kundalik-promo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Kundalik yordamchi reklama videosi: HTML animatsiyadan MP4",
+  "scripts": {
+    "render": "node render.js",
+    "render:vertical": "node render.js --format vertical"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1"
+  }
+}

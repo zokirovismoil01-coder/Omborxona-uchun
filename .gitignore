@@ -9,3 +9,6 @@ android/app/web-assets/
 android/local.properties
 android/.idea/
 *.iml
+
+# Reklama videosi
+promo/stills/

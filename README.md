@@ -92,6 +92,7 @@ manifest.webmanifest  — telefonga o'rnatish sozlamalari
 tests/                — tahlilchi testlari
 android/              — Android ilova (WebView + ovoz tanish, eslatmalar)
 .github/workflows/    — APK'ni avtomatik yig'ish
+promo/                — reklama videosi (kod bilan yasalgan, promo/README.md ga qarang)
 ```
 
 APK'ni kompyuterda yig'ish (JDK 17 va Android SDK kerak):
