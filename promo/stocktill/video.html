@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<title>StockTill — reklama video</title>
+<!--
+  StockTill (ombor nazorati) uchun 1:20 lik vertikal reklama videosi (1080x1920).
+  Ekranlar — ilovaning haqiqiy suratlari (shots/, env/capture.js), har bir kadr VIDEO.seek(t) bilan chiziladi.
+  Ko'rish: video.html (aylanadi) yoki video.html?t=24.5 (aynan shu soniya).
+-->
+<style>
+@font-face { font-family: 'InterV'; src: url('../fonts/inter-latin-opsz-normal.woff2') format('woff2'); font-weight: 100 900; font-style: normal; }
+
+:root {
+  --bg: #040705;
+  --ink: #eef5f0;
+  --muted: #95a59b;
+  --g1: #16704a;
+  --g2: #3fb583;
+  --g3: #5fd09a;
+  --mint: #b4f5d2;
+  --red: #ff8d84;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: #000; overflow: hidden; }
+#stage { position: relative; width: 1080px; height: 1920px; overflow: hidden; background: var(--bg); color: var(--ink);
+  font-family: 'InterV', 'Noto Color Emoji', sans-serif; -webkit-font-smoothing: antialiased; }
+.scene { position: absolute; inset: 0; display: none; perspective: 2200px; }
+.c { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+.abs { position: absolute; left: 0; top: 0; }
+.w { display: inline-block; white-space: pre; }
+.acc { color: var(--g3); }
+
+#glowWrap { position: absolute; inset: 0; pointer-events: none; }
+.glow { position: absolute; left: 0; top: 0; border-radius: 50%; mix-blend-mode: screen; }
+#glowA { background: radial-gradient(closest-side, rgba(22,112,74,.55), rgba(22,112,74,.32) 40%, rgba(16,80,54,.13) 70%, rgba(16,80,54,0) 100%); }
+#glowB { background: radial-gradient(closest-side, rgba(63,181,131,.5), rgba(63,181,131,.22) 50%, rgba(63,181,131,0) 100%); }
+#glowC { background: radial-gradient(closest-side, rgba(200,250,222,.5), rgba(95,208,154,.16) 55%, rgba(95,208,154,0) 100%); }
+#scrim { position: absolute; left: 0; top: 0; width: 1080px; height: 640px; pointer-events: none; opacity: 0;
+  background: linear-gradient(180deg, rgba(4,7,5,.92) 0%, rgba(4,7,5,.78) 55%, rgba(4,7,5,0) 100%); }
+#vignette { position: absolute; inset: 0; pointer-events: none; background: radial-gradient(ellipse 80% 70% at 50% 50%, rgba(0,0,0,0) 55%, rgba(0,0,0,.6) 100%); }
+#grain { position: absolute; inset: -64px; pointer-events: none; }
+#flash { position: absolute; inset: 0; pointer-events: none; opacity: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(235,255,244,1) 0%, rgba(150,240,190,.8) 30%, rgba(63,181,131,.4) 60%, rgba(22,112,74,0) 90%); }
+
+/* ---------- Ilova belgisi ---------- */
+.appicon { width: 240px; height: 240px; filter: drop-shadow(0 26px 70px rgba(63,181,131,.45)); }
+.appicon svg { width: 100%; height: 100%; display: block; }
+.wordmark { font-size: 156px; font-weight: 800; letter-spacing: -0.045em; line-height: 1; white-space: nowrap; }
+.wordmark .ch { display: inline-block; }
+.sub { font-size: 50px; font-weight: 560; color: var(--muted); letter-spacing: -0.015em; white-space: nowrap; }
+.vchip { font-size: 34px; font-weight: 700; color: var(--mint); padding: 14px 30px; border-radius: 999px; white-space: nowrap;
+  background: rgba(63,181,131,.12); box-shadow: inset 0 0 0 2px rgba(95,208,154,.45), 0 0 40px rgba(63,181,131,.25); }
+
+/* ---------- Matnlar ---------- */
+.q { font-size: 84px; font-weight: 760; letter-spacing: -0.04em; line-height: 1.08; text-align: center; width: 980px; }
+.head { position: absolute; left: 50%; top: 0; width: 960px; margin-left: -480px; text-align: center; font-size: 74px; font-weight: 760;
+  letter-spacing: -0.04em; line-height: 1.1; }
+.head .acc { text-shadow: 0 0 40px rgba(63,181,131,.5); }
+.label { position: absolute; left: 0; top: 0; padding: 16px 26px; border-radius: 22px; font-size: 33px; font-weight: 680; letter-spacing: -0.015em;
+  white-space: nowrap; color: var(--ink); background: rgba(8,20,14,.92);
+  box-shadow: inset 0 0 0 2px rgba(95,208,154,.7), 0 18px 50px rgba(0,0,0,.55), 0 0 40px rgba(63,181,131,.3); }
+.label.red { box-shadow: inset 0 0 0 2px rgba(255,141,132,.75), 0 18px 50px rgba(0,0,0,.55), 0 0 40px rgba(255,120,110,.25); }
+.label i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--g3); margin-right: 14px; vertical-align: 2px; box-shadow: 0 0 12px var(--g3); }
+.label.red i { background: var(--red); box-shadow: 0 0 12px var(--red); }
+
+/* ---------- Telefon ---------- */
+.phone { width: 436px; height: 969px; }
+.pframe { position: absolute; inset: 0; border-radius: 62px;
+  background: linear-gradient(150deg, #3d4744 0%, #141917 22%, #0b0e0d 60%, #29302e 100%);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.1), inset 0 0 0 5px #050706, 0 0 0 1px rgba(0,0,0,.9), 0 80px 160px rgba(0,0,0,.7), 0 0 140px rgba(63,181,131,.18); }
+.pbtn { position: absolute; right: -4px; width: 5px; border-radius: 3px; background: #2a3230; }
+.pscreen { position: absolute; left: 12px; top: 12px; width: 412px; height: 945px; border-radius: 50px; overflow: hidden; background: #101512; }
+.pstatus { position: absolute; left: 0; top: 0; width: 412px; height: 30px; background: #1a211d; color: #e9efe9; font-size: 15px; font-weight: 650;
+  display: flex; align-items: center; justify-content: space-between; padding: 4px 28px 0 32px; }
+.pstatus .cam { position: absolute; left: 50%; top: 7px; width: 18px; height: 18px; margin-left: -9px; border-radius: 50%; background: #000;
+  box-shadow: inset 0 0 0 3px #111, inset 3px -3px 5px rgba(80,120,140,.35); }
+.pstatus .ic { display: flex; gap: 5px; align-items: center; }
+.pview { position: absolute; left: 0; top: 30px; width: 412px; height: 915px; overflow: hidden; background: #101512; }
+.layer { position: absolute; left: 0; top: 0; width: 412px; height: 915px; background-size: 412px 915px; background-repeat: no-repeat; }
+.dim { position: absolute; inset: 0; background: #000; opacity: 0; }
+.sheet { position: absolute; left: 0; top: 0; background-repeat: no-repeat; background-size: 412px 915px; }
+.spot { position: absolute; left: 0; top: 0; border-radius: 14px; opacity: 0; }
+.tap { position: absolute; left: 0; top: 0; width: 70px; height: 70px; margin: -35px 0 0 -35px; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.55) 0%, rgba(255,255,255,.25) 45%, rgba(255,255,255,0) 70%); box-shadow: 0 0 0 3px rgba(255,255,255,.7); opacity: 0; }
+.pinbox { position: absolute; border-radius: 9px; background: #1a211d; box-shadow: inset 0 0 0 1px #2b352f; display: flex; align-items: center; justify-content: center;
+  font-size: 24px; letter-spacing: 8px; color: #e9efe9; }
+
+/* ---------- Ko'tariluvchi kartochkalar ---------- */
+.card { position: absolute; left: 0; top: 0; border-radius: 18px; background-repeat: no-repeat; overflow: hidden;
+  box-shadow: 0 34px 90px rgba(0,0,0,.65), 0 0 0 2px rgba(95,208,154,.55), 0 0 70px rgba(63,181,131,.35); }
+
+/* ---------- Rollar ---------- */
+.role { position: absolute; left: 0; top: 0; display: flex; align-items: center; gap: 20px; padding: 20px 30px 20px 22px; border-radius: 28px; white-space: nowrap;
+  background: rgba(10,22,16,.9); box-shadow: inset 0 0 0 2px rgba(95,208,154,.45), 0 22px 60px rgba(0,0,0,.55); }
+.role .ri { width: 66px; height: 66px; border-radius: 20px; display: grid; place-items: center; background: rgba(63,181,131,.16); box-shadow: inset 0 0 0 2px rgba(95,208,154,.35); }
+.role .ri svg { width: 38px; height: 38px; }
+.role b { display: block; font-size: 36px; font-weight: 720; letter-spacing: -0.02em; }
+.role small { display: block; font-size: 25px; color: var(--muted); font-weight: 520; margin-top: 2px; }
+
+/* ---------- Sinxron sahnasi ---------- */
+.laptop { width: 900px; height: 600px; }
+.lscreen { position: absolute; left: 20px; top: 0; width: 860px; height: 560px; border-radius: 22px 22px 6px 6px; background: #0b0e0d; padding: 12px 12px 18px;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.08), 0 60px 120px rgba(0,0,0,.7), 0 0 120px rgba(63,181,131,.18); }
+.lscreen .img { width: 836px; height: 522px; border-radius: 6px; background-size: 836px 522px; }
+.lbase { position: absolute; left: 0; top: 556px; width: 900px; height: 30px; border-radius: 4px 4px 26px 26px;
+  background: linear-gradient(180deg, #2f3735, #151a18); box-shadow: 0 20px 40px rgba(0,0,0,.6); }
+.lbase::after { content: ''; position: absolute; left: 50%; top: 0; width: 140px; height: 9px; margin-left: -70px; border-radius: 0 0 10px 10px; background: #0d1110; }
+.mini { width: 300px; height: 640px; }
+.mini .mframe { position: absolute; inset: 0; border-radius: 44px; background: linear-gradient(150deg, #3d4744, #0b0e0d 60%, #29302e);
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.1), 0 50px 100px rgba(0,0,0,.7); }
+.mini .mimg { position: absolute; left: 9px; top: 9px; width: 282px; height: 622px; border-radius: 36px; background-size: 282px 626px; background-position: 0 0; }
+.cloud { width: 170px; height: 170px; border-radius: 50%; display: grid; place-items: center;
+  background: radial-gradient(circle, rgba(63,181,131,.35), rgba(22,112,74,.25) 60%, rgba(22,112,74,.05)); box-shadow: inset 0 0 0 3px rgba(95,208,154,.6), 0 0 80px rgba(63,181,131,.5); }
+.cloud svg { width: 96px; height: 96px; }
+.ring { position: absolute; left: 50%; top: 50%; width: 170px; height: 170px; margin: -85px 0 0 -85px; border-radius: 50%; box-shadow: 0 0 0 3px rgba(95,208,154,.6); }
+.link { position: absolute; left: 0; top: 0; height: 4px; transform-origin: 0 50%; border-radius: 2px;
+  background: repeating-linear-gradient(90deg, rgba(95,208,154,.75) 0 14px, rgba(95,208,154,0) 14px 26px); }
+.packet { position: absolute; left: 0; top: 0; width: 18px; height: 18px; margin: -9px 0 0 -9px; border-radius: 50%; background: var(--mint); box-shadow: 0 0 18px 6px rgba(95,208,154,.7); }
+.chip { position: absolute; left: 0; top: 0; padding: 16px 28px; border-radius: 999px; font-size: 32px; font-weight: 700; white-space: nowrap; color: var(--ink);
+  background: rgba(8,20,14,.9); box-shadow: inset 0 0 0 2px rgba(95,208,154,.6), 0 18px 50px rgba(0,0,0,.5); }
+#oPlat.c { left: 50%; top: 50%; }
+.chip i { display: inline-block; width: 14px; height: 14px; border-radius: 50%; background: var(--g3); margin-right: 14px; vertical-align: 3px; box-shadow: 0 0 14px var(--g3); }
+
+/* ---------- Chat sahnasi ---------- */
+.chat { width: 700px; height: 1080px; border-radius: 40px; overflow: hidden; background: #0e1613;
+  box-shadow: inset 0 0 0 2px rgba(255,255,255,.07), 0 60px 140px rgba(0,0,0,.75), 0 0 100px rgba(63,181,131,.2); }
+.chat .ch-head { height: 120px; display: flex; align-items: center; gap: 22px; padding: 0 30px; background: #15211c; border-bottom: 1px solid rgba(255,255,255,.06); }
+.chat .av { width: 74px; height: 74px; border-radius: 50%; display: grid; place-items: center; font-size: 34px; font-weight: 800; color: #062a1a;
+  background: linear-gradient(135deg, #5fd09a, #16704a); }
+.chat .ch-head b { display: block; font-size: 32px; font-weight: 700; }
+.chat .ch-head small { display: block; font-size: 24px; color: var(--muted); }
+.chat .msgs { position: absolute; left: 0; right: 0; top: 120px; bottom: 0; padding: 30px; }
+.bub { position: absolute; border-radius: 26px; padding: 18px 24px; font-size: 30px; line-height: 1.3; }
+.bub.in { left: 30px; background: #1d2a24; border-bottom-left-radius: 8px; max-width: 520px; }
+.bub.out { right: 30px; background: #1f5a3e; border-bottom-right-radius: 8px; padding: 10px; }
+.bub .meta { font-size: 22px; color: rgba(238,245,240,.6); text-align: right; margin-top: 6px; }
+.bub .rep { width: 460px; height: 657px; border-radius: 18px; background-size: 460px auto; background-position: 0 0; background-repeat: no-repeat; background-color: #fff; }
+.bub.out .cap { font-size: 28px; padding: 12px 10px 2px; }
+.bub.out .meta { padding: 0 10px 6px; }
+.flyimg { position: absolute; left: 0; top: 0; border-radius: 14px; background-size: 100% auto; background-color: #fff; box-shadow: 0 30px 70px rgba(0,0,0,.6); }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="gApp" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#2c9a69"/><stop offset=".55" stop-color="#1b7d52"/><stop offset="1" stop-color="#0f5a3a"/></linearGradient>
+    <linearGradient id="gShine" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".3"/><stop offset=".5" stop-color="#fff" stop-opacity="0"/></linearGradient>
+    <symbol id="appIcon" viewBox="0 0 512 512">
+      <rect width="512" height="512" rx="104" fill="url(#gApp)"/>
+      <rect width="512" height="512" rx="104" fill="url(#gShine)"/>
+      <rect x="1.5" y="1.5" width="509" height="509" rx="103" fill="none" stroke="#fff" stroke-opacity=".2" stroke-width="3"/>
+      <path d="M104 118 L132 168" stroke="#fff" stroke-width="30" stroke-linecap="round"/>
+      <rect x="146" y="180" width="232" height="140" fill="none" stroke="#fff" stroke-width="28" stroke-linejoin="round"/>
+      <path d="M146 184 L132 168" stroke="#fff" stroke-width="28" stroke-linecap="round"/>
+      <circle cx="200" cy="386" r="30" fill="#fff"/><circle cx="324" cy="386" r="30" fill="#fff"/>
+    </symbol>
+    <symbol id="icShield" viewBox="0 0 24 24"><path d="M12 2l8 3v6c0 5-3.4 9.4-8 11-4.6-1.6-8-6-8-11V5z" fill="none" stroke="#5fd09a" stroke-width="2" stroke-linejoin="round"/><path d="M8.5 12l2.5 2.5 4.5-5" fill="none" stroke="#5fd09a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="icBox" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z" fill="none" stroke="#5fd09a" stroke-width="2" stroke-linejoin="round"/><path d="M3.3 7 12 12l8.7-5M12 22V12" fill="none" stroke="#5fd09a" stroke-width="2"/></symbol>
+    <symbol id="icEye" viewBox="0 0 24 24"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z" fill="none" stroke="#5fd09a" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="#5fd09a" stroke-width="2"/></symbol>
+    <symbol id="icCloud" viewBox="0 0 24 24"><path d="M7 18h10a4 4 0 0 0 .6-7.95A6 6 0 0 0 6.1 9.4 4.3 4.3 0 0 0 7 18z" fill="none" stroke="#b4f5d2" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 13.5l2 2 3.5-4" fill="none" stroke="#b4f5d2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+  </defs>
+</svg>
+
+<div id="stage">
+  <div id="glowWrap"><div class="glow" id="glowA"></div><div class="glow" id="glowB"></div><div class="glow" id="glowC"></div></div>
+
+  <!-- 1. Logo -->
+  <div class="scene" id="sLogo">
+    <div class="c appicon" id="lgIcon"><svg><use href="#appIcon"/></svg></div>
+    <div class="c wordmark" id="lgWord">StockTill</div>
+    <div class="c sub" id="lgSub">Ombor va savdo nazorati</div>
+    <div class="c vchip" id="lgVer">Yangi versiya · 1.9</div>
+  </div>
+
+  <!-- 2. Savollar -->
+  <div class="scene" id="sQ">
+    <div class="c q" id="q1">Omborda nima <span class="acc">qoldi?</span></div>
+    <div class="c q" id="q2">Diler nima oldi, nima <span class="acc">qaytardi?</span></div>
+    <div class="c q" id="q3">Ertaga nimani <span class="acc">buyurtma</span> qilamiz?</div>
+  </div>
+
+
+  <!-- 3. Telefon (asosiy) -->
+  <div class="scene" id="sPhone">
+    <div class="c phone" id="phone">
+      <div class="pframe"></div>
+      <div class="pbtn" style="top:200px;height:70px"></div><div class="pbtn" style="top:300px;height:110px"></div>
+      <div class="pscreen">
+        <div class="pstatus"><span>17:40</span><span class="cam"></span>
+          <span class="ic">
+            <svg width="17" height="12" viewBox="0 0 18 13"><rect x="0" y="9" width="3" height="4" rx="1" fill="#fff"/><rect x="5" y="6" width="3" height="7" rx="1" fill="#fff"/><rect x="10" y="3" width="3" height="10" rx="1" fill="#fff"/><rect x="15" y="0" width="3" height="13" rx="1" fill="#fff"/></svg>
+            <svg width="17" height="12" viewBox="0 0 18 13"><path d="M9 12.5 L12 9 A4.6 4.6 0 0 0 6 9 Z" fill="#fff"/><path d="M2.6 5.6 A9 9 0 0 1 15.4 5.6" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/><path d="M5 8 A5.8 5.8 0 0 1 13 8" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"/></svg>
+            <svg width="26" height="12" viewBox="0 0 27 13"><rect x=".5" y=".5" width="23" height="12" rx="3.5" stroke="#fff" stroke-opacity=".5" fill="none"/><rect x="2.5" y="2.5" width="15" height="8" rx="2" fill="#fff"/><rect x="24.5" y="4.5" width="2" height="4" rx="1" fill="#fff" fill-opacity=".5"/></svg>
+          </span>
+        </div>
+        <div class="pview" id="pview">
+          <div class="layer" id="la"></div>
+          <div class="layer" id="lb"></div>
+          <div class="dim" id="ldim"></div>
+          <div class="sheet" id="lsheet"></div>
+          <div class="pinbox" id="pinbox"></div>
+          <div class="spot" id="spot"></div>
+          <div class="dim" id="pdim"></div>
+          <div class="tap" id="tap"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rollar -->
+  <div id="roles">
+    <div class="role" id="r1"><span class="ri"><svg><use href="#icShield"/></svg></span><span><b>Administrator</b><small>narx, diler, tahrir</small></span></div>
+    <div class="role" id="r2"><span class="ri"><svg><use href="#icBox"/></svg></span><span><b>Omborxona</b><small>savdo, kirim-chiqim</small></span></div>
+    <div class="role" id="r3"><span class="ri"><svg><use href="#icEye"/></svg></span><span><b>Kuzatuvchi</b><small>faqat koʻradi</small></span></div>
+  </div>
+
+  <!-- Kartochkalar va yorliqlar (JS yaratadi) -->
+  <div id="cards"></div>
+  <div id="labels"></div>
+
+  <!-- 4. Chat -->
+  <div class="scene" id="sChat">
+    <div class="c chat" id="chat">
+      <div class="ch-head"><div class="av">M</div><div><b>Markaziy ombor · hisobotlar</b><small>3 ishtirokchi</small></div></div>
+      <div class="msgs">
+        <div class="bub in" id="bIn" style="top:30px">Bugungi diler hisobotini tashlab yuboring<div class="meta">17:38</div></div>
+        <div class="bub out" id="bOut" style="top:200px"><div class="rep" id="bRep"></div><div class="cap">Diler hisoboti: Baraka market</div><div class="meta">17:41 ✓✓</div></div>
+      </div>
+    </div>
+    <div class="flyimg" id="fly"></div>
+  </div>
+
+  <!-- 5. Sinxron -->
+  <div class="scene" id="sSync">
+    <div id="links"></div>
+    <div class="c laptop" id="laptop"><div class="lscreen"><div class="img" id="lapImg"></div></div><div class="lbase"></div></div>
+    <div class="c mini" id="miniA"><div class="mframe"></div><div class="mimg" id="miniAImg"></div></div>
+    <div class="c mini" id="miniB"><div class="mframe"></div><div class="mimg" id="miniBImg"></div></div>
+    <div class="c cloud" id="cloud"><div class="ring" id="ring1"></div><div class="ring" id="ring2"></div><svg><use href="#icCloud"/></svg></div>
+    <div class="chip" id="chip1"><i></i>Jonli sinxron</div>
+    <div class="chip" id="chip2"><i></i>Internet uzilsa ham ishlaydi</div>
+  </div>
+
+  <!-- 6. Yakun -->
+  <div class="scene" id="sOut">
+    <div class="c appicon" id="oIcon"><svg><use href="#appIcon"/></svg></div>
+    <div class="c wordmark" id="oWord">StockTill</div>
+    <div class="c sub" id="oTag" style="color:#eef5f0;font-size:58px;font-weight:700">Omboringiz — <span class="acc">nazoratda</span></div>
+    <div class="c chip" id="oPlat" style="font-size:34px"><i></i>Android · Windows · Brauzer</div>
+  </div>
+
+  <div id="scrim"></div>
+  <!-- Sarlavhalar (JS yaratadi) — telefon ustida turadi -->
+  <div id="heads"></div>
+  <div id="flash"></div>
+  <div id="vignette"></div>
+  <div id="grain"></div>
+</div>
+
+<script src="shots/rects.js"></script>
+<script>
+'use strict';
+const $ = (id) => document.getElementById(id);
+const W = 1080, H = 1920, FPS = 30, DURATION = 80;
+const SHOT = (n) => `url(shots/${n}.webp)`;
+
+// ---------- Yordamchilar ----------
+const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const lerp = (a, b, t) => a + (b - a) * t;
+const E = {
+  lin: (t) => t,
+  inCubic: (t) => t * t * t,
+  outCubic: (t) => 1 - Math.pow(1 - t, 3),
+  inOutCubic: (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2),
+  inOutQuint: (t) => (t < 0.5 ? 16 * t ** 5 : 1 - Math.pow(-2 * t + 2, 5) / 2),
+  outExpo: (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t)),
+  inExpo: (t) => (t <= 0 ? 0 : Math.pow(2, 10 * t - 10)),
+  outBack: (t) => { const c = 1.5; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); },
+};
+const p = (t, a, b, ease = E.outCubic) => ease(clamp((t - a) / (b - a)));
+// ichida/tashqarida: a..b oralig'ida 0→1→0 (kirish din, chiqish dout)
+const io = (t, a, b, din = 0.35, dout = 0.3) => p(t, a, a + din, E.outCubic) * (1 - p(t, b - dout, b, E.inCubic));
+function tf(el, o = {}) {
+  const { x = 0, y = 0, s = 1, rx = 0, ry = 0, rz = 0, op = 1, blur = 0 } = o;
+  const c = el.classList.contains('c') ? 'translate(-50%,-50%) ' : '';
+  let tr = `${c}translate(${x.toFixed(2)}px,${y.toFixed(2)}px)`;
+  if (rx || ry || rz) tr += ` rotateX(${rx.toFixed(3)}deg) rotateY(${ry.toFixed(3)}deg) rotateZ(${rz.toFixed(3)}deg)`;
+  tr += ` scale(${s.toFixed(4)})`;
+  el.style.transform = tr;
+  el.style.opacity = clamp(op).toFixed(3);
+  el.style.filter = blur > 0.15 ? `blur(${blur.toFixed(2)}px)` : 'none';
+  el.style.visibility = op <= 0.002 ? 'hidden' : 'visible';
+}
+// segmentli kalit kadrlar: [[t, {k: v}], ...] — yo'q kalitlar oldingi qiymatni saqlaydi
+function track(keys, defEase = E.inOutCubic) {
+  const names = new Set(); keys.forEach(([, o]) => Object.keys(o).forEach((k) => names.add(k)));
+  const full = []; let cur = {};
+  keys.forEach(([t, o, ease]) => { cur = { ...cur, ...o }; full.push([t, { ...cur }, ease]); });
+  return (t) => {
+    if (t <= full[0][0]) return full[0][1];
+    for (let i = 0; i < full.length - 1; i++) {
+      const [t0, a] = full[i], [t1, b, ease] = full[i + 1];
+      if (t <= t1) { const k = (ease || defEase)(clamp((t - t0) / (t1 - t0))); const o = {}; names.forEach((n) => { o[n] = lerp(a[n] ?? 0, b[n] ?? 0, k); }); return o; }
+    }
+    return full[full.length - 1][1];
+  };
+}
+const splitWords = (el) => {
+  const walk = (node) => [...node.childNodes].forEach((ch) => {
+    if (ch.nodeType === 3) { const frag = document.createDocumentFragment(); ch.textContent.split(/(\s+)/).forEach((w) => { if (!w) return; if (/^\s+$/.test(w)) frag.appendChild(document.createTextNode(w)); else { const s = document.createElement('span'); s.className = 'w'; s.textContent = w; frag.appendChild(s); } }); ch.replaceWith(frag); }
+    else if (ch.nodeType === 1 && !ch.classList.contains('w')) walk(ch);
+  });
+  walk(el); return [...el.querySelectorAll('.w')];
+};
+const R = (shot, sel, i = 0) => (window.RECTS[shot] && window.RECTS[shot][sel] && window.RECTS[shot][sel][i]) || [0, 0, 0, 0];
+const union = (...rs) => { const x = Math.min(...rs.map((r) => r[0])), y = Math.min(...rs.map((r) => r[1])), x2 = Math.max(...rs.map((r) => r[0] + r[2])), y2 = Math.max(...rs.map((r) => r[1] + r[3])); return [x, y, x2 - x, y2 - y]; };
+const pad = (r, a = 6) => [r[0] - a, r[1] - a, r[2] + 2 * a, r[3] + 2 * a];
+
+// ---------- Fon nuri ----------
+const GLOW = track([
+  [0.0, { x: 0.5, y: 1.15, s: 0.8, i: 0 }],
+  [1.6, { x: 0.5, y: 0.5, s: 1.0, i: 1 }],
+  [3.8, { x: 0.5, y: 0.47, s: 1.0, i: 0.9 }],
+  [4.3, { x: 0.5, y: 0.55, s: 1.15, i: 0.75 }],
+  [7.9, { x: 0.5, y: 0.6, s: 1.1, i: 0.8 }],
+  [9.4, { x: 0.5, y: 0.66, s: 1.0, i: 1 }],
+  [15.9, { x: 0.5, y: 0.63, s: 1.0, i: 1 }],
+  [16.2, { x: 0.5, y: 0.6, s: 1.3, i: 1.35 }],
+  [17.2, { x: 0.5, y: 0.62, s: 1.05, i: 1 }],
+  [47.9, { x: 0.5, y: 0.64, s: 1.0, i: 0.95 }],
+  [48.2, { x: 0.5, y: 0.58, s: 1.3, i: 1.3 }],
+  [49.2, { x: 0.5, y: 0.6, s: 1.05, i: 1 }],
+  [63.9, { x: 0.5, y: 0.6, s: 1.0, i: 0.95 }],
+  [64.6, { x: 0.5, y: 0.52, s: 1.2, i: 1 }],
+  [67.9, { x: 0.5, y: 0.6, s: 1.0, i: 0.9 }],
+  [68.2, { x: 0.5, y: 0.58, s: 1.3, i: 1.3 }],
+  [69.2, { x: 0.5, y: 0.62, s: 1.0, i: 1 }],
+  [75.8, { x: 0.5, y: 0.62, s: 1.0, i: 0.9 }],
+  [76.3, { x: 0.5, y: 0.47, s: 1.35, i: 1.4 }],
+  [77.4, { x: 0.5, y: 0.5, s: 1.1, i: 1.05 }],
+  [79.0, { x: 0.5, y: 0.52, s: 1.0, i: 0.9 }],
+  [79.9, { x: 0.5, y: 0.6, s: 0.9, i: 0 }],
+]);
+function updGlow(t) {
+  const g = GLOW(t), br = 1 + 0.05 * Math.sin((t / 2) * Math.PI * 2);
+  const it = clamp(g.i * br, 0, 1.5), gx = g.x * W, gy = g.y * H;
+  const place = (el, w, h, s, o, dy = 0) => { el.style.width = w + 'px'; el.style.height = h + 'px'; el.style.transform = `translate(${(gx - w / 2).toFixed(1)}px,${(gy - h / 2 + dy).toFixed(1)}px) scale(${s.toFixed(4)})`; el.style.opacity = clamp(o).toFixed(3); };
+  place($('glowA'), 1900, 2500, g.s, it);
+  place($('glowB'), 900, 1150, g.s * (0.96 + 0.04 * br), it * 0.9, 60);
+  place($('glowC'), 330, 420, g.s, Math.max(0, it - 0.2) * 0.8, 90);
+}
+const grainTiles = [];
+(function () {
+  for (let n = 0; n < 6; n++) {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 256;
+    const g = cv.getContext('2d'), img = g.createImageData(256, 256); let seed = 99 + n * 7919;
+    for (let i = 0; i < img.data.length; i += 4) { seed = (seed * 1664525 + 1013904223) >>> 0; img.data[i] = img.data[i + 1] = img.data[i + 2] = seed >>> 24; img.data[i + 3] = 5; }
+    g.putImageData(img, 0, 0); grainTiles.push(`url(${cv.toDataURL()})`);
+  }
+})();
+function updGrain(t) { const f = Math.floor(Math.round(t * FPS) / 2), el = $('grain'); el.style.backgroundImage = grainTiles[f % 6]; el.style.backgroundPosition = `${(f * 97) % 256}px ${(f * 61) % 256}px`; }
+
+// ---------- 1. Logo ----------
+const lgChars = (() => { const el = $('lgWord'); el.innerHTML = [...el.textContent].map((c) => `<span class="ch">${c}</span>`).join(''); return [...el.children]; })();
+function updLogo(t) {
+  const out = p(t, 3.45, 4.05, E.inCubic);
+  const a = p(t, 0.15, 1.15, E.outExpo);
+  tf($('lgIcon'), { y: -170 - out * 60, s: lerp(0.5, 1, a) * lerp(1, 1.15, out), op: a * (1 - out), blur: (1 - a) * 20 + out * 20 });
+  tf($('lgWord'), { y: 90 - out * 60, op: 1 - out, blur: out * 18 });
+  lgChars.forEach((el, i) => { const b = p(t, 0.6 + i * 0.045, 1.3 + i * 0.045, E.outCubic); tf(el, { y: (1 - b) * 60, op: b, blur: (1 - b) * 14 }); });
+  const s = p(t, 1.35, 1.95);
+  tf($('lgSub'), { y: 205 + (1 - s) * 24 - out * 60, op: s * (1 - out), blur: (1 - s) * 10 + out * 16 });
+  const v = p(t, 1.9, 2.5, E.outBack);
+  tf($('lgVer'), { y: 315 - out * 60, s: lerp(0.6, 1, v), op: p(t, 1.9, 2.2) * (1 - out), blur: out * 16 });
+}
+
+// ---------- 2. Savollar ----------
+const QW = ['q1', 'q2', 'q3'].map((id) => splitWords($(id)));
+const QT = [4.05, 5.4, 6.75];
+function updQ(t) {
+  const out = p(t, 7.75, 8.2, E.inCubic);
+  ['q1', 'q2', 'q3'].forEach((id, k) => {
+    const t0 = QT[k], next = QT[k + 1] || 99;
+    const dimK = p(t, next, next + 0.4);
+    tf($(id), { y: -260 + k * 250 - out * 120, op: (t >= t0 - 0.05 ? 1 : 0) * lerp(1, 0.32, dimK) * (1 - out), blur: out * 18 });
+    QW[k].forEach((w, i) => { const a = p(t, t0 + i * 0.07, t0 + i * 0.07 + 0.45, E.outExpo); tf(w, { y: (1 - a) * 60, op: a, blur: (1 - a) * 16 }); });
+  });
+}
+
+// ---------- Sarlavhalar ----------
+const HEADS = [
+  [8.15, 11.95, 'Hammasi — <span class="acc">bitta ilovada</span>'],
+  [12.1, 15.85, 'PIN va barmoq izi bilan <span class="acc">himoya</span>'],
+  [16.15, 23.85, 'Bugungi holat — <span class="acc">bir qarashda</span>'],
+  [24.1, 31.85, 'Dilerga sotuv — <span class="acc">bir necha soniyada</span>'],
+  [32.1, 39.85, 'Qaytgan va <span class="acc">muddati oʻtgan</span> mahsulot'],
+  [40.1, 47.85, 'Kirim, sanoq va <span class="acc">hisobdan chiqarish</span>'],
+  [48.15, 55.85, 'Ertangi buyurtmani <span class="acc">oʻzi hisoblaydi</span>'],
+  [56.1, 63.85, 'Diler hisoboti — <span class="acc">bir tugmada</span>'],
+  [64.1, 67.85, 'Kompyuter va telefonlar — <span class="acc">bitta baza</span>'],
+  [68.15, 71.85, 'Har bir qurilma — <span class="acc">nazoratda</span>'],
+  [72.1, 75.75, 'Har bir oʻzgarish — <span class="acc">sababi bilan</span>'],
+].map(([t0, t1, html]) => { const el = document.createElement('div'); el.className = 'head'; el.innerHTML = html; $('heads').appendChild(el); return { t0, t1, el, words: splitWords(el) }; });
+function updHeads(t) {
+  for (const h of HEADS) {
+    const on = t >= h.t0 - 0.05 && t <= h.t1 + 0.05;
+    h.el.style.display = on ? 'block' : 'none';
+    if (!on) continue;
+    const hh = h.el.offsetHeight, y = 330 - hh / 2;
+    h.el.style.top = y.toFixed(1) + 'px';
+    h.words.forEach((w, i) => {
+      const a = p(t, h.t0 + i * 0.06, h.t0 + i * 0.06 + 0.5, E.outExpo);
+      const o = p(t, h.t1 - 0.32 + i * 0.02, h.t1 + i * 0.02, E.inCubic);
+      tf(w, { y: (1 - a) * 50 - o * 30, op: a * (1 - o), blur: (1 - a) * 14 + o * 14 });
+    });
+  }
+}
+
+// ---------- Telefon: joylashuv ----------
+// Telefon kalit kadrlari (maxsus holatlar). Spotlight'lar uchun kamera yaqinlashuvi pastda qo'shiladi.
+const DEF = { x: 540, y: 1235, s: 1.36 };
+const PH_KEYS = [
+  [7.85, { x: 540, y: 2700, s: 1.16, rx: 42, ry: -16, rz: 9, op: 1, blur: 12, dim: 0 }],
+  [9.3, { ...DEF, rx: 7, ry: -7, rz: 0, blur: 0 }, E.outExpo],
+  [11.0, { rx: 0, ry: 0 }],
+  [16.75, { ...DEF, dim: 0 }],
+  [17.25, { y: 1370, s: 1.18, dim: 0.55 }],
+  [19.45, { y: 1370, s: 1.18, dim: 0.55 }],
+  [19.95, { ...DEF, dim: 0 }],
+  [31.05, { ...DEF, dim: 0 }],
+  [31.3, { dim: 0.45 }],
+  [31.85, { dim: 0.45 }],
+  [32.1, { dim: 0 }],
+  [39.05, { dim: 0 }],
+  [39.3, { dim: 0.45 }],
+  [39.85, { dim: 0.45 }],
+  [40.1, { dim: 0 }],
+  [50.1, { ...DEF, dim: 0 }],
+  [50.6, { y: 1400, s: 1.16, dim: 0.55 }],
+  [53.35, { y: 1400, s: 1.16, dim: 0.55 }],
+  [53.85, { ...DEF, dim: 0 }],
+  [60.4, { ...DEF, ry: 0, rz: 0, dim: 0 }],
+  [61.0, { x: 300, y: 1330, s: 0.98, ry: 18, rz: -2, dim: 0.5 }],
+  [63.6, { x: 300, y: 1330, s: 0.98, ry: 18, rz: -2, dim: 0.5 }],
+  [64.4, { x: 230, y: 1565, s: 0.5, ry: 0, rz: -5, dim: 0 }],
+  [67.5, { x: 230, y: 1565, s: 0.5, ry: 0, rz: -5, dim: 0 }],
+  [68.15, { ...DEF, ry: 0, rz: 0, dim: 0 }],
+  [75.4, { ...DEF, op: 1, blur: 0 }],
+  [75.95, { y: 1300, s: 1.16, op: 0, blur: 16 }],
+];
+const PV = { x: -206, y: -442.5 }; // ekran (412x915) chap-yuqori burchagi telefon markaziga nisbatan
+const toStage = (P, x, y) => [P.x + P.s * (PV.x + x), P.y + P.s * (PV.y + y)];
+let PH = null; // SPOTS aniqlangandan keyin quriladi
+
+// ---------- Telefon: ekranlar ----------
+const SCREENS = [
+  [7.8, 'lock'],
+  [15.85, 'dash_top', 'unlock', 0.4],
+  [20.0, 'dash_bottom', 'drift', 0.45],
+  [24.15, 'pos_list', 'tab', 0.22],
+  [27.4, 'pos_cart', 'drift', 0.4],
+  [29.15, 'pos_pay', 'sheet', 0.45],
+  [30.75, 'pos_receipt', 'sheet', 0.45],
+  [32.15, 'ret_top', 'tab', 0.22],
+  [34.0, 'ret_lists', 'drift', 0.4],
+  [37.2, 'ret_total', 'drift', 0.4],
+  [38.75, 'ret_receipt', 'sheet', 0.45],
+  [40.15, 'inv_batch', 'tab', 0.22],
+  [43.6, 'inv_batch_lines', 'drift', 0.4],
+  [45.75, 'inv_history', 'tab', 0.22],
+  [48.0, 'dash_forecast', 'tab', 0.25],
+  [56.15, 'deal_report', 'tab', 0.22],
+  [58.55, 'deal_detail', 'tab', 0.22],
+  [63.9, 'dash_top', 'fade', 0.3],
+  [67.9, 'set_devices', 'fade', 0.3],
+  [71.9, 'audit_delete', 'sheet', 0.45],
+];
+const TAPS = [
+  [15.5, 206, 565], [24.0, 88, 890], [29.0, 206, 809], [30.6, 206, 821], [32.0, 303, 93], [38.6, 206, 761],
+  [40.0, 206, 890], [45.6, 351, 93], [47.85, 29, 890], [56.0, 324, 890], [58.4, 206, 492], [60.15, 122, 336],
+];
+const SPOTS = [
+  [20.5, 21.85, [12, 383, 388, 216]],
+  [21.85, 23.6, [12, 612, 388, 224]],
+  [24.6, 25.9, union(R('pos_list', '#sale_dl'), R('pos_list', '#sale_dlh'))],
+  [25.9, 27.25, union(R('pos_list', '#poscat .catrow.has', 0), R('pos_list', '#poscat .catrow.has', 1))],
+  [27.85, 28.55, [12, 81, 388, 318]],
+  [28.55, 29.0, R('pos_cart', '#extrasRows .exrow', 0)],
+  [29.65, 30.55, union(R('pos_pay', '#pay_dealer'), R('pos_pay', '#pay_who'))],
+  [32.6, 33.9, R('ret_top', '#rt_type')],
+  [34.45, 35.8, R('ret_lists', '.rtsec[data-sec="return"]')],
+  [35.8, 37.15, R('ret_lists', '.rtsec[data-sec="expired"]')],
+  [37.65, 38.55, R('ret_total', '#rt_extras .exrow', 0)],
+  [40.6, 42.1, R('inv_batch', '#bmode')],
+  [42.1, 43.55, union(R('inv_batch', '#bwho'), R('inv_batch', '#bnote'))],
+  [44.05, 45.55, union(R('inv_batch_lines', '#blines .cline', 0), R('inv_batch_lines', '#blines .cline', 1))],
+  [46.05, 47.5, union(R('inv_history', '#hlist .rowg', 0), R('inv_history', '#hlist .rowg', 2))],
+  [48.6, 49.6, [20, 184, 372, 96]],
+  [53.85, 55.8, [248, 283, 140, 560]],
+  [56.6, 58.35, union(R('deal_report', '#rp_body .rowg', 1), R('deal_report', '#rp_body .rowg', 4))],
+  [58.95, 59.9, union(R('deal_detail', '.kpi', 0), R('deal_detail', '.kpi', 5))],
+  [68.6, 70.2, union(R('set_devices', '#s_devs .devrow', 0), R('set_devices', '#s_devs .devrow', 2))],
+  [70.2, 71.7, R('set_devices', '#s_devs .devrow', 4)],
+  [72.5, 74.9, R('audit_delete', '.auitem')],
+].map(([t0, t1, r]) => [t0, t1, pad(r, 5)]);
+const LABELS = [
+  [20.6, 21.85, 'Oxirgi 7 kunlik savdo', 206, 352],
+  [21.95, 23.6, 'Kam qolgan va tugagan mahsulotlar', 206, 580],
+  [24.7, 25.9, 'Diler narxlari oʻzi qoʻllanadi', 206, 268],
+  [26.0, 27.25, 'Soni kiritiladi — summa darhol', 206, 322],
+  [28.6, 29.05, 'Idishlar ham hisobda', 206, 612],
+  [29.7, 30.55, 'Diler va maʼsul shaxs — majburiy', 206, 540],
+  [32.7, 33.9, 'Ikki roʻyxat — bitta qabulda', 206, 292],
+  [34.5, 35.8, 'Qaytgan — omborga qaytadi', 206, 30],
+  [35.9, 37.15, 'Muddati oʻtgan — hisobdan chiqadi', 206, 344, 'red'],
+  [37.7, 38.55, 'Qaytgan idishlar ham hisobda', 206, 446],
+  [40.7, 42.1, 'Qabul · Sanoq · Hisobdan chiqarish', 206, 124],
+  [42.2, 43.55, 'Har amalda — maʼsul shaxs', 206, 450],
+  [44.1, 45.55, 'Tizimdagi qoldiq → yangi qoldiq', 206, 386],
+  [46.1, 47.5, 'Kim, qachon, qancha — tarixda', 206, 425],
+  [48.7, 49.6, '28 kunlik savdo · hafta kuni hisobda', 206, 300],
+  [53.95, 55.8, 'Ertaga va indinga qancha kerak', 206, 252],
+  [56.7, 58.35, 'Savdo · qaytgan · sof summa', 206, 372],
+  [59.05, 59.9, 'Har bir diler — batafsil', 206, 398],
+  [68.7, 70.2, 'Qaysi qurilma onlayn — koʻrinadi', 206, 116],
+  [70.3, 71.7, 'Notanish qurilmani oʻchirish', 206, 672, 'red'],
+  [72.6, 74.9, 'Sababsiz oʻchirib boʻlmaydi', 206, 690],
+].map(([t0, t1, text, x, y, kind]) => { const el = document.createElement('div'); el.className = 'label' + (kind ? ' ' + kind : ''); el.innerHTML = `<i></i>${text}`; $('labels').appendChild(el); return { t0, t1, el, x, y }; });
+// Ko'tariluvchi kartochkalar: ekran bo'lagi telefondan chiqib, ko'rinadigan joyga uchadi
+const CARDS = [
+  ...[0, 1, 2, 3].map((i) => ({ t0: 16.9 + i * 0.15, t1: 19.75, shot: 'dash_top', r: R('dash_top', '.kpi', i), K: 2.3, to: [300 + (i % 2) * 480, i < 2 ? 655 : 862], rz: i % 2 ? 1.5 : -1.5 })),
+  { t0: 31.1, t1: 31.95, shot: 'pos_receipt', r: R('pos_receipt', '.receipt'), K: 1.75, to: [540, 1110], rz: -4 },
+  { t0: 39.15, t1: 39.95, shot: 'ret_receipt', r: R('ret_receipt', '.receipt', 0), K: 1.45, to: [330, 1020], rz: -6 },
+  { t0: 39.3, t1: 39.95, shot: 'ret_receipt', r: R('ret_receipt', '.receipt', 1), K: 1.45, to: [760, 1170], rz: 5 },
+  ...[0, 1, 2].map((i) => ({ t0: 50.3 + i * 0.18, t1: 53.4, shot: 'dash_forecast', r: R('dash_forecast', '.card.fc .rowg:not(.head)', i), K: 2.35, to: [540, 640 + i * 160], rz: 0 })),
+].map((c) => { const el = document.createElement('div'); el.className = 'card'; const [x, y, w, h] = c.r;
+  el.style.width = (w * c.K) + 'px'; el.style.height = (h * c.K) + 'px'; el.style.backgroundImage = SHOT(c.shot);
+  el.style.backgroundSize = `${412 * c.K}px ${915 * c.K}px`; el.style.backgroundPosition = `${-x * c.K}px ${-y * c.K}px`;
+  $('cards').appendChild(el); return { ...c, el }; });
+const PIN_T = [9.95, 10.35, 10.75, 11.15];
+// Avtomatik kamera: har bir spotlight'ga yaqinlashib, ajratilgan joyni ekranning ko'rinadigan qismiga olib keladi
+(function buildCamera() {
+  // telefon kadrdan qochib ketmasin: tepasi 600 dan pastda, pasti 1900 dan yuqorida bo'lmasin
+  const zoom = (r) => {
+    const [x, y, w, h] = r, sc = clamp(Math.min(1.9, 920 / w, 760 / h), DEF.s, 1.9), half = 484.5 * sc;
+    const py = clamp(1210 - sc * (PV.y + y + h / 2), Math.min(1900 - half, DEF.y), Math.max(600 + half, DEF.y));
+    return { x: clamp(540 - sc * (PV.x + x + w / 2), 400, 680), y: py, s: sc };
+  };
+  const keys = [];
+  SPOTS.forEach(([t0, t1, r], i) => {
+    const prevEnd = i > 0 ? SPOTS[i - 1][1] : -1, next = SPOTS[i + 1];
+    const chained = Math.abs(prevEnd - t0) < 0.01, z = zoom(r);
+    if (!chained) keys.push([t0 - 0.02, { ...DEF }]);
+    keys.push([t0 + 0.5, z, E.inOutCubic], [t1, z]);
+    if (!(next && Math.abs(next[0] - t1) < 0.01)) keys.push([t1 + 0.45, { ...DEF }, E.inOutCubic]);
+  });
+  const all = PH_KEYS.concat(keys).sort((a, b) => a[0] - b[0]);
+  PH = track(all);
+})();
+
+function shotAt(t) {
+  let i = 0; for (let k = 0; k < SCREENS.length; k++) if (SCREENS[k][0] <= t) i = k;
+  const [t0, shot, tr, d] = SCREENS[i], prev = i > 0 ? SCREENS[i - 1][1] : shot;
+  const k = tr ? clamp((t - t0) / d) : 1;
+  return { shot, prev, tr, k };
+}
+function setLayer(el, shot, o) { const u = SHOT(shot); if (el.dataset.s !== u) { el.style.backgroundImage = u; el.dataset.s = u; } tf(el, o); }
+
+function updPhone(t) {
+  const P = { ...PH(t) };
+  P.y += 6 * Math.sin(t * 0.9);
+  tf($('phone'), { x: P.x - 540, y: P.y - 960, s: P.s, rx: P.rx, ry: P.ry + 1.6 * Math.sin(t * 0.55), rz: P.rz, op: P.op, blur: P.blur });
+
+  // ekran qatlamlari
+  const S = shotAt(t), la = $('la'), lb = $('lb'), sheet = $('lsheet'), ldim = $('ldim');
+  sheet.style.visibility = 'hidden'; ldim.style.opacity = 0;
+  if (S.k >= 1 || !S.tr) { setLayer(la, S.shot, {}); tf(lb, { op: 0 }); }
+  else if (S.tr === 'sheet') {
+    setLayer(la, S.prev, {}); tf(lb, { op: 0 });
+    const r = R(S.shot, '.mpanel'), e = E.outExpo(S.k);
+    ldim.style.opacity = (0.45 * Math.min(1, S.k * 2.5)).toFixed(3);
+    sheet.style.visibility = 'visible';
+    sheet.style.backgroundImage = SHOT(S.shot); sheet.style.left = r[0] + 'px'; sheet.style.width = r[2] + 'px'; sheet.style.height = r[3] + 'px';
+    sheet.style.top = r[1] + 'px'; sheet.style.backgroundPosition = `${-r[0]}px ${-r[1]}px`;
+    sheet.style.transform = `translateY(${((1 - e) * (915 - r[1])).toFixed(1)}px)`;
+  } else {
+    const e = E.inOutCubic(S.k);
+    if (S.tr === 'drift') { setLayer(la, S.prev, { y: -50 * e, op: 1 - e }); setLayer(lb, S.shot, { y: 50 * (1 - e), op: e }); }
+    else if (S.tr === 'unlock') { setLayer(la, S.prev, { s: lerp(1, 1.12, e), op: 1 - e, blur: e * 8 }); setLayer(lb, S.shot, { s: lerp(0.92, 1, E.outCubic(S.k)), op: e }); }
+    else { setLayer(la, S.prev, { op: 1 - e }); setLayer(lb, S.shot, { op: e }); }
+  }
+  // PIN nuqtalari (qulf ekranida)
+  const pb = $('pinbox'), pr = R('lock', '#lk_pin');
+  if (t < 15.9) { pb.style.display = 'flex'; pb.style.left = pr[0] + 'px'; pb.style.top = pr[1] + 'px'; pb.style.width = pr[2] + 'px'; pb.style.height = pr[3] + 'px'; pb.textContent = '•'.repeat(PIN_T.filter((x) => t >= x).length); pb.style.opacity = S.shot === 'lock' ? 1 : 0; }
+  else pb.style.display = 'none';
+  // telefon xiralashuvi (kartochkalar chiqqanda)
+  $('pdim').style.opacity = (P.dim || 0).toFixed(3);
+  // spotlight
+  const sp = $('spot'); let act = null, prevSp = null;
+  for (let i = 0; i < SPOTS.length; i++) if (t >= SPOTS[i][0] && t <= SPOTS[i][1]) { act = SPOTS[i]; prevSp = i > 0 && Math.abs(SPOTS[i - 1][1] - act[0]) < 0.01 ? SPOTS[i - 1] : null; }
+  if (act) {
+    let r = act[2];
+    const mv = prevSp ? E.inOutCubic(clamp((t - act[0]) / 0.35)) : 1;
+    if (prevSp && mv < 1) r = r.map((v, j) => lerp(prevSp[2][j], v, mv));
+    const fin = prevSp ? 1 : p(t, act[0], act[0] + 0.3);
+    const next = SPOTS.find((s) => Math.abs(s[0] - act[1]) < 0.01);
+    const fout = next ? 1 : 1 - p(t, act[1] - 0.25, act[1], E.inCubic);
+    const k = fin * fout, pulse = 1 + 0.02 * Math.sin((t - act[0]) * 6);
+    sp.style.left = r[0] + 'px'; sp.style.top = r[1] + 'px'; sp.style.width = r[2] + 'px'; sp.style.height = r[3] + 'px';
+    sp.style.opacity = 1;
+    sp.style.boxShadow = `0 0 0 1600px rgba(0,0,0,${(0.58 * k).toFixed(3)}), inset 0 0 0 ${(3 * k).toFixed(2)}px rgba(95,208,154,${k.toFixed(3)}), 0 0 ${(34 * k * pulse).toFixed(1)}px rgba(63,181,131,${(0.75 * k).toFixed(3)})`;
+  } else sp.style.opacity = 0;
+  // bosish (tap)
+  const tp = TAPS.find(([t0]) => t >= t0 && t < t0 + 0.45);
+  if (tp) { const k = (t - tp[0]) / 0.45; const tap = $('tap'); tap.style.left = tp[1] + 'px'; tap.style.top = tp[2] + 'px'; tap.style.opacity = (0.95 * (1 - k)).toFixed(3); tap.style.transform = `scale(${lerp(0.4, 1.5, E.outCubic(k)).toFixed(3)})`; }
+  else $('tap').style.opacity = 0;
+  return P;
+}
+
+function updLabels(t, P) {
+  for (const L of LABELS) {
+    const k = io(t, L.t0, L.t1, 0.3, 0.25);
+    if (k <= 0.001) { L.el.style.display = 'none'; continue; }
+    L.el.style.display = 'block';
+    const [sx, sy] = toStage(P, L.x, L.y), w = L.el.offsetWidth, h = L.el.offsetHeight;
+    const a = p(t, L.t0, L.t0 + 0.45, E.outBack);
+    L.el.style.transform = `translate(${(sx - w / 2).toFixed(1)}px,${(sy - h / 2 + (1 - a) * 18).toFixed(1)}px) scale(${lerp(0.8, 1, a).toFixed(4)})`;
+    L.el.style.opacity = k.toFixed(3);
+  }
+}
+function updCards(t, P) {
+  for (const C of CARDS) {
+    const on = t >= C.t0 && t <= C.t1 + 0.05;
+    C.el.style.display = on ? 'block' : 'none';
+    if (!on) continue;
+    const [x, y, w, h] = C.r;
+    const [sx, sy] = toStage(P, x + w / 2, y + h / 2);
+    const a = p(t, C.t0, C.t0 + 0.6, E.outExpo), b = p(t, C.t1 - 0.4, C.t1, E.inOutCubic);
+    const fromS = P.s / C.K;
+    const cx = lerp(lerp(sx, C.to[0], a), sx, b), cy = lerp(lerp(sy, C.to[1], a), sy, b);
+    const s = lerp(lerp(fromS, 1, a), fromS, b);
+    const cw = w * C.K, ch = h * C.K;
+    C.el.style.transform = `translate(${(cx - cw / 2).toFixed(1)}px,${(cy - ch / 2).toFixed(1)}px) rotate(${(C.rz * a * (1 - b)).toFixed(2)}deg) scale(${s.toFixed(4)})`;
+    C.el.style.opacity = (1 - p(t, C.t1 - 0.12, C.t1 + 0.05)).toFixed(3);
+  }
+}
+function updRoles(t, P) {
+  const pos = [[-310, -150], [300, 40], [-300, 230]];
+  ['r1', 'r2', 'r3'].forEach((id, i) => {
+    const el = $(id), t0 = 12.5 + i * 0.35, t1 = 15.6;
+    const k = io(t, t0, t1, 0.45, 0.35);
+    if (k <= 0.001) { el.style.display = 'none'; return; }
+    el.style.display = 'flex';
+    const a = p(t, t0, t0 + 0.6, E.outBack), w = el.offsetWidth, h = el.offsetHeight;
+    const x = P.x + pos[i][0] - w / 2 + (pos[i][0] < 0 ? 1 : -1) * 0, y = P.y + pos[i][1] - h / 2 + 5 * Math.sin(t * 1.4 + i);
+    el.style.transform = `translate(${(x + (1 - a) * (pos[i][0] < 0 ? -80 : 80)).toFixed(1)}px,${y.toFixed(1)}px) scale(${lerp(0.85, 1, a).toFixed(4)})`;
+    el.style.opacity = k.toFixed(3);
+  });
+}
+
+// ---------- 4. Chat ----------
+function updChat(t, P) {
+  const inK = p(t, 60.55, 61.2, E.outExpo), out = p(t, 63.5, 64.05, E.inCubic);
+  tf($('chat'), { x: 120 + (1 - inK) * 300, y: 0, s: lerp(0.9, 1, inK) * lerp(1, 0.94, out), op: inK * (1 - out), blur: (1 - inK) * 14 + out * 16, ry: (1 - inK) * -20 });
+  const bi = p(t, 60.9, 61.3, E.outBack);
+  tf($('bIn'), { s: lerp(0.7, 1, bi), op: p(t, 60.9, 61.1) });
+  $('bIn').style.transformOrigin = '0 100%';
+  // rasm telefondagi "Rasm sifatida ulashish" tugmasidan chat pufakchasiga uchadi
+  const f0 = 61.25, f1 = 62.0, fk = p(t, f0, f1, E.inOutQuint);
+  const fly = $('fly'), bo = $('bOut');
+  const [bx, by] = toStage(P, 122, 336);
+  const chatX = 540 + 120, chatY = 960;                 // chat markazi
+  const repX = chatX + 80, repY = chatY + 118.5;         // pufakchadagi rasm markazi
+  const showBub = t >= f1;
+  bo.style.opacity = showBub ? (1 - out).toFixed(3) : 0;
+  if (t >= f0 && t < f1 + 0.02) {
+    fly.style.display = 'block'; fly.style.backgroundImage = SHOT('report_sheet');
+    const w = lerp(160, 460, fk), h = w * 1.428;
+    const cx = lerp(bx, repX, fk), cy = lerp(by, repY, fk) - Math.sin(Math.PI * fk) * 140;
+    fly.style.width = w + 'px'; fly.style.height = h + 'px';
+    fly.style.transform = `translate(${(cx - w / 2).toFixed(1)}px,${(cy - h / 2).toFixed(1)}px) rotate(${(lerp(-12, 0, fk)).toFixed(2)}deg)`;
+    fly.style.opacity = 1;
+  } else fly.style.display = 'none';
+}
+$('bRep').style.backgroundImage = SHOT('report_sheet');
+
+// ---------- 5. Sinxron ----------
+$('lapImg').style.backgroundImage = SHOT('pc_dash');
+$('miniAImg').style.backgroundImage = SHOT('inv_levels');
+$('miniBImg').style.backgroundImage = SHOT('deal_report');
+const LINKS = [[540, 1035, 540, 1125], [470, 1262, 320, 1345], [610, 1262, 760, 1345]].map(([x1, y1, x2, y2]) => {
+  const el = document.createElement('div'); el.className = 'link'; $('links').appendChild(el);
+  const pk = document.createElement('div'); pk.className = 'packet'; $('links').appendChild(pk);
+  const len = Math.hypot(x2 - x1, y2 - y1), ang = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
+  el.style.width = len + 'px'; el.style.transform = `translate(${x1}px,${y1 - 2}px) rotate(${ang}deg)`;
+  return { el, pk, x1, y1, x2, y2 };
+});
+function updSync(t) {
+  const a = p(t, 64.0, 64.7, E.outExpo), out = p(t, 67.45, 67.95, E.inCubic);
+  tf($('laptop'), { y: -200 + (1 - a) * -120, s: lerp(0.8, 0.92, a) * lerp(1, 0.94, out), op: a * (1 - out), blur: (1 - a) * 14 + out * 14 });
+  const b = p(t, 64.35, 65.0, E.outExpo);
+  tf($('miniA'), { x: -290, y: 520 + (1 - b) * 200, rz: -5, s: 0.94, op: 0, blur: 0 });
+  tf($('miniB'), { x: 310, y: 605 + (1 - b) * 200, rz: 5, s: 0.76, op: b * (1 - out), blur: (1 - b) * 12 + out * 12 });
+  const c = p(t, 64.5, 65.0, E.outBack);
+  tf($('cloud'), { y: 250, s: lerp(0.5, 1, c), op: p(t, 64.5, 64.8) * (1 - out) });
+  [['ring1', 0], ['ring2', 0.8]].forEach(([id, off]) => { const ph = ((t - 64.5 + off) % 1.6) / 1.6; tf($(id), { s: lerp(1, 2.1, ph), op: (t > 64.5 ? 0.7 : 0) * (1 - ph) }); });
+  LINKS.forEach((L, i) => {
+    const k = p(t, 64.7 + i * 0.12, 65.2 + i * 0.12) * (1 - out);
+    L.el.style.opacity = k.toFixed(3);
+    L.el.style.backgroundPosition = `${(-(t * 60) % 26).toFixed(1)}px 0`;
+    const ph = ((t * 0.9 + i * 0.37) % 1);
+    const fwd = i === 0 ? 1 - ph : ph;
+    L.pk.style.transform = `translate(${lerp(L.x1, L.x2, fwd).toFixed(1)}px,${lerp(L.y1, L.y2, fwd).toFixed(1)}px)`;
+    L.pk.style.opacity = (k * Math.sin(Math.PI * ph)).toFixed(3);
+  });
+  const c1 = io(t, 65.0, 67.6, 0.4, 0.3), c2 = io(t, 65.6, 67.6, 0.4, 0.3);
+  const chip = (id, k, x, y, t0) => { const el = $(id), w = el.offsetWidth; const a = p(t, t0, t0 + 0.5, E.outBack); el.style.transform = `translate(${(x - w / 2).toFixed(1)}px,${(y + (1 - a) * 20).toFixed(1)}px) scale(${lerp(0.8, 1, a).toFixed(3)})`; el.style.opacity = k.toFixed(3); };
+  chip('chip1', c1, 540, 1395, 65.0);
+  chip('chip2', c2, 540, 1495, 65.6);
+}
+
+// ---------- 6. Yakun ----------
+const oChars = (() => { const el = $('oWord'); el.innerHTML = [...el.textContent].map((c) => `<span class="ch">${c}</span>`).join(''); return [...el.children]; })();
+function updOut(t) {
+  const fade = p(t, 79.0, 79.85, E.inOutCubic);
+  const a = p(t, 76.05, 76.9, E.outExpo);
+  tf($('oIcon'), { y: -260, s: lerp(1.35, 1, a) * lerp(1, 1.04, p(t, 76, 80, E.lin)), op: a * (1 - fade), blur: (1 - a) * 18 + fade * 10 });
+  tf($('oWord'), { y: 0, op: 1 - fade, blur: fade * 10 });
+  oChars.forEach((el, i) => { const b = p(t, 76.3 + i * 0.04, 77.0 + i * 0.04, E.outCubic); tf(el, { y: (1 - b) * 50, op: b, blur: (1 - b) * 12 }); });
+  const g = p(t, 77.1, 77.7);
+  tf($('oTag'), { y: 125 + (1 - g) * 20, op: g * (1 - fade), blur: (1 - g) * 8 + fade * 10 });
+  const h = p(t, 77.6, 78.2, E.outBack);
+  tf($('oPlat'), { y: 245, s: lerp(0.8, 1, h), op: p(t, 77.6, 77.9) * (1 - fade) });
+}
+function updFlash(t) {
+  const f = (t0, d = 0.6, m = 0.75) => p(t, t0, t0 + 0.08, E.outCubic) * (1 - p(t, t0 + 0.08, t0 + d, E.outCubic)) * m;
+  $('flash').style.opacity = Math.max(f(15.88, 0.55, 0.55), f(76.0, 0.9, 0.85)).toFixed(3);
+}
+
+// ---------- Sahnalar ----------
+const SCENES = {
+  logo: [$('sLogo'), 0, 4.1, updLogo],
+  q: [$('sQ'), 4.0, 8.25, updQ],
+  phone: [$('sPhone'), 7.8, 76.0, null],
+  chat: [$('sChat'), 60.5, 64.1, null],
+  sync: [$('sSync'), 63.95, 68.0, updSync],
+  out: [$('sOut'), 75.9, DURATION, updOut],
+};
+function seek(t) {
+  updGlow(t); updGrain(t); updFlash(t); updHeads(t);
+  $('scrim').style.opacity = (p(t, 8.0, 8.6) * (1 - p(t, 75.6, 76.0))).toFixed(3);
+  for (const [, [el, a, b, fn]] of Object.entries(SCENES)) { const on = t >= a && t <= b; el.style.display = on ? 'block' : 'none'; if (on && fn) fn(t); }
+  let P = null;
+  if (t >= 7.8 && t <= 76.0) P = updPhone(t);
+  const showP = !!P;
+  $('roles').style.display = showP ? 'block' : 'none';
+  $('cards').style.display = showP ? 'block' : 'none';
+  $('labels').style.display = showP ? 'block' : 'none';
+  if (showP) { updRoles(t, P); updCards(t, P); updLabels(t, P); if (t >= 60.5 && t <= 64.1) updChat(t, P); }
+}
+
+const CUES = [
+  ['whoosh', 7.9], ['tap', 9.95], ['tap', 10.35], ['tap', 10.75], ['tap', 11.15], ['pop', 12.5], ['pop', 12.85], ['pop', 13.2], ['tap', 15.5],
+  ['pop', 16.9], ['pop', 17.05], ['pop', 17.2], ['pop', 17.35], ['whoosh', 19.6], ['whoosh', 23.95],
+  ['tap', 24.0], ['type', 26.0], ['tap', 29.0], ['whoosh', 29.2], ['tap', 30.6], ['ding', 31.0], ['whoosh', 31.9],
+  ['tap', 32.0], ['tap', 38.6], ['ding', 39.1], ['whoosh', 39.9], ['tap', 40.0], ['tap', 45.6], ['tap', 47.85],
+  ['pop', 50.05], ['pop', 50.23], ['pop', 50.41], ['whoosh', 53.3], ['tap', 56.0], ['tap', 58.4], ['tap', 60.15], ['whoosh', 61.3], ['ding', 62.0],
+  ['whoosh', 63.9], ['pop', 65.0], ['pop', 65.6], ['whoosh', 67.7], ['whoosh', 71.85], ['whoosh', 75.6],
+];
+window.VIDEO = { W, H, FPS, DURATION, seek, CUES, format: 'vertical' };
+
+const params = new URLSearchParams(location.search);
+const imgs = [...new Set(['lock', 'dash_top', 'dash_bottom', 'dash_forecast', 'pos_list', 'pos_cart', 'pos_pay', 'pos_receipt', 'ret_top', 'ret_lists', 'ret_total', 'ret_receipt', 'inv_batch', 'inv_batch_lines', 'inv_history', 'inv_levels', 'deal_report', 'deal_detail', 'set_devices', 'audit_delete', 'report_sheet', 'pc_dash'])];
+Promise.all([document.fonts.load('700 40px InterV'), ...imgs.map((n) => new Promise((res) => { const im = new Image(); im.onload = im.onerror = res; im.src = `shots/${n}.webp`; }))])
+  .then(() => document.fonts.ready)
+  .then(() => {
+    const fixed = params.get('t');
+    if (params.has('render')) seek(0);
+    else if (fixed !== null) seek(parseFloat(fixed));
+    else { const st = performance.now(); const loop = (now) => { seek(((now - st) / 1000) % DURATION); requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+    window.VIDEO.ready = true;
+  });
+</script>
+</body>
+</html>

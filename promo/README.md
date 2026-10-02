@@ -50,3 +50,7 @@ formatni, `video.html?t=8.4` esa aynan shu soniyadagi kadrni ko'rsatadi.
 - **Vaqtlar** — `scenes` ro'yxati va har bir sahnaning `upd...` funksiyasi.
 - **Ovoz effektlari** — `video.html` dagi `CUES` ro'yxati (qaysi soniyada qanday ovoz) va `audio.js`.
 - **Ranglar** — `video.html` boshidagi `:root` CSS o'zgaruvchilari.
+
+## Boshqa videolar
+
+- [`stocktill/`](stocktill/README.md) — StockTill (ombor va savdo nazorati) uchun 1:20 lik vertikal reklama videosi.

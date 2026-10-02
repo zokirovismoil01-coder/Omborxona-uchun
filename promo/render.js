@@ -4,6 +4,7 @@
 //   node render.js                         → kundalik-promo.mp4 (1920x1080)
 //   node render.js --format vertical       → kundalik-promo-vertical.mp4 (1080x1920, Reels/TikTok)
 //   node render.js --stills 1.5,8.4,20.6   → tanlangan soniyalardagi kadrlar (PNG), tekshirish uchun
+//   node render.js --page stocktill/video.html --format vertical   → boshqa video (o'z audio.js bilan)
 //
 // Kerak: Node.js 18+, ffmpeg, Playwright (Chromium bilan).
 'use strict';
@@ -11,7 +12,7 @@ const fs = require('fs');
 const os = require('os');
 const path = require('path');
 const { spawn, execSync } = require('child_process');
-const { synth, writeWav } = require('./audio.js');
+const { writeWav } = require('./audio.js');
 
 function loadPlaywright() {
   try {
@@ -36,8 +37,13 @@ function parseArgs() {
     else if (k === 'from') a.from = +v, i++;
     else if (k === 'to') a.to = +v, i++;
     else if (k === 'no-audio') a.noAudio = true;
+    else if (k === 'page') a.page = v, i++;
   }
-  a.out = a.out || path.join(__dirname, a.format === 'vertical' ? 'kundalik-promo-vertical.mp4' : 'kundalik-promo.mp4');
+  // Sahifa va uning ovozi: sahifa yonidagi audio.js (synth yoki render funksiyasi)
+  a.page = path.resolve(__dirname, a.page || 'video.html');
+  a.audio = path.join(path.dirname(a.page), 'audio.js');
+  a.base = path.dirname(a.page) === __dirname ? 'kundalik-promo' : path.basename(path.dirname(a.page)) + '-promo';
+  a.out = a.out || path.join(path.dirname(a.page), a.base + (a.format === 'vertical' ? '-vertical' : '') + '.mp4');
   return a;
 }
 
@@ -52,19 +58,18 @@ function run(cmd, args, opts = {}) {
   });
 }
 
-async function openPage(browser, format, mode) {
+async function openPage(browser, page, format, mode) {
   const W = format === 'vertical' ? 1080 : 1920;
   const H = format === 'vertical' ? 1920 : 1080;
-  const page = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
-  const url = 'file://' + path.join(__dirname, 'video.html') + `?format=${format}&${mode}`;
-  await page.goto(url);
-  await page.waitForFunction(() => window.VIDEO && window.VIDEO.ready === true);
-  const cdp = await page.context().newCDPSession(page);
+  const pg = await browser.newPage({ viewport: { width: W, height: H }, deviceScaleFactor: 1 });
+  await pg.goto('file://' + page + `?format=${format}&${mode}`);
+  await pg.waitForFunction(() => window.VIDEO && window.VIDEO.ready === true, null, { timeout: 60000 });
+  const cdp = await pg.context().newCDPSession(pg);
   const shot = async () => {
     const { data } = await cdp.send('Page.captureScreenshot', { format: 'png', optimizeForSpeed: true, clip: { x: 0, y: 0, width: W, height: H, scale: 1 } });
     return Buffer.from(data, 'base64');
   };
-  return { page, shot, W, H };
+  return { page: pg, shot, W, H };
 }
 
 async function main() {
@@ -73,8 +78,8 @@ async function main() {
   const browser = await chromium.launch({ args: ['--force-color-profile=srgb', '--hide-scrollbars', '--font-render-hinting=none'] });
   try {
     if (args.stills) {
-      const { page, shot } = await openPage(browser, args.format, 'render');
-      const dir = path.join(__dirname, 'stills');
+      const { page, shot } = await openPage(browser, args.page, args.format, 'render');
+      const dir = path.join(path.dirname(args.page), 'stills');
       fs.mkdirSync(dir, { recursive: true });
       for (const t of args.stills) {
         await page.evaluate((tt) => window.VIDEO.seek(tt), t);
@@ -85,7 +90,7 @@ async function main() {
       return;
     }
 
-    const probe = await openPage(browser, args.format, 'render');
+    const probe = await openPage(browser, args.page, args.format, 'render');
     const meta = await probe.page.evaluate(() => ({ fps: VIDEO.FPS, duration: VIDEO.DURATION, cues: VIDEO.CUES }));
     await probe.page.close();
     const from = Math.round((args.from || 0) * meta.fps);
@@ -104,7 +109,7 @@ async function main() {
       const b = Math.min(to, a + chunk);
       const seg = path.join(tmp, `seg${k}.mkv`);
       if (a >= b) return null;
-      const { page, shot } = await openPage(browser, args.format, 'render');
+      const { page, shot } = await openPage(browser, args.page, args.format, 'render');
       const ff = spawn('ffmpeg', ['-y', '-loglevel', 'error', '-f', 'image2pipe', '-framerate', String(meta.fps), '-c:v', 'png', '-i', '-',
         '-c:v', 'libx264rgb', '-qp', '0', '-preset', 'ultrafast', seg], { stdio: ['pipe', 'ignore', 'inherit'] });
       const closed = new Promise((res, rej) => ff.on('close', (c) => (c === 0 ? res() : rej(new Error('ffmpeg ' + c)))));
@@ -130,6 +135,7 @@ async function main() {
     if (!args.noAudio) {
       const wav = path.join(tmp, 'audio.wav');
       const sr = 48000;
+      const mod = require(args.audio), synth = mod.synth || mod.render;
       writeWav(wav, synth(meta.cues, meta.duration, sr), sr);
       const startSec = from / meta.fps;
       inputs.push('-ss', startSec.toFixed(3), '-t', (total / meta.fps).toFixed(3), '-i', wav);
@@ -147,7 +153,9 @@ async function main() {
   }
 }
 
-main().catch((e) => {
-  console.error(e);
-  process.exit(1);
-});
+if (require.main === module) {
+  main().catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+}

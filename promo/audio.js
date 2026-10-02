@@ -304,4 +304,4 @@ function writeWav(file, chans, sr) {
   fs.writeFileSync(file, buf);
 }
 
-module.exports = { synth, writeWav };
+module.exports = { synth, writeWav, reverb, svf };
