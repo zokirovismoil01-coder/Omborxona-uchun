@@ -53,4 +53,4 @@ formatni, `video.html?t=8.4` esa aynan shu soniyadagi kadrni ko'rsatadi.
 
 ## Boshqa videolar
 
-- [`stocktill/`](stocktill/README.md) — StockTill (ombor va savdo nazorati) uchun 1:20 lik vertikal reklama videosi.
+- [`stocktill/`](stocktill/README.md) — StockTill (ombor va savdo nazorati) uchun 1:20 lik vertikal reklama videosi: musiqali va o'zbekcha diktor ovozli versiyalari.
