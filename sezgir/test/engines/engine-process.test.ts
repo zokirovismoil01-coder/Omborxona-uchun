@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
-import { CrashLimiter, EngineProcessExit, forkLauncher, type EngineRole } from '../../src/engines/engine-process.js';
+import { CrashLimiter, EngineProcessExit, exitDetail, forkLauncher, type EngineRole } from '../../src/engines/engine-process.js';
 import { ParakeetEngine } from '../../src/engines/parakeet.js';
 import { startParakeetProcess } from '../../src/engines/parakeet-process.js';
 import { startArabicProcess } from '../../src/engines/arabic-runtime.js';
@@ -56,6 +56,16 @@ describe('the crash limiter', () => {
   });
 });
 
+describe('how an exit reads', () => {
+  it('names a signal and a Windows NTSTATUS as a crash, and anything else by its code', () => {
+    expect(exitDetail(null)).toBe(' (crashed)');
+    expect(exitDetail(3221225477)).toBe(' (crashed, 0xC0000005)');
+    expect(exitDetail(-1073741819)).toBe(' (crashed, 0xC0000005)');
+    expect(exitDetail(1)).toBe(' (exit code 1)');
+    expect(exitDetail(0)).toBe(' (exit code 0)');
+  });
+});
+
 describe('the modes model in its own process', () => {
   it('answers from another process', async () => {
     const polisher = remote({ launcher: fake('ok') });
@@ -71,7 +81,8 @@ describe('the modes model in its own process', () => {
     const polisher = remote({ launcher: fake('crash-on-work', 'ok'), onNote: (note) => notes.push(note) });
     await expect(polisher.generate('first', 'en', PROMPT, 8, never)).rejects.toBeInstanceOf(EngineProcessExit);
     expect(polisher.isLoaded).toBe(false);
-    expect(notes.join('\n')).toMatch(/stopped \(crashed\).*starts it again/u);
+    // POSIX reports the fake's self-kill as a signal ("crashed"); Windows as exit code 1.
+    expect(notes.join('\n')).toMatch(/stopped \((crashed|exit code 1)\).*starts it again/u);
     expect(await polisher.generate('second', 'en', PROMPT, 8, never)).toMatch(/^SECOND@/u);
   });
 

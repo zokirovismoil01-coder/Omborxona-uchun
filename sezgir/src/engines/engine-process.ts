@@ -174,6 +174,19 @@ export class CrashLimiter {
   }
 }
 
+/**
+ * How an exit reads in a note. POSIX reports a crash as a signal (`code` null); Windows has no
+ * signals and reports the NTSTATUS instead — 0xC0000005 for an access violation, 0xC0000409 for
+ * a stack-buffer overrun — so an exit code in the 0xC0000000 range is a crash too, named with
+ * its hex code so it can be looked up.
+ */
+export function exitDetail(code: number | null): string {
+  if (code === null) return ' (crashed)';
+  const unsigned = code >>> 0;
+  if (unsigned >= 0xc0000000) return ` (crashed, 0x${unsigned.toString(16).toUpperCase().padStart(8, '0')})`;
+  return ` (exit code ${code})`;
+}
+
 /** A process that ended without being asked to. `code` is null for a signal or a crash. */
 export class EngineProcessExit extends Error {
   readonly code: number | null;
@@ -181,10 +194,7 @@ export class EngineProcessExit extends Error {
   readonly beforeReady: boolean;
 
   constructor(role: EngineRole, code: number | null, beforeReady: boolean) {
-    super(
-      `the ${role} engine process ${beforeReady ? 'could not start' : 'stopped'}` +
-        (code === null ? ' (crashed)' : ` (exit code ${code})`),
-    );
+    super(`the ${role} engine process ${beforeReady ? 'could not start' : 'stopped'}${exitDetail(code)}`);
     this.name = 'EngineProcessExit';
     this.code = code;
     this.beforeReady = beforeReady;
