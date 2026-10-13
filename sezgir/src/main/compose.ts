@@ -31,8 +31,9 @@ import type {
   Settings,
   SettingsStore,
 } from '../contracts/index.js';
-import { CREDENTIAL_SERVICE, DEFAULT_SETTINGS } from '../contracts/index.js';
+import { CREDENTIAL_SERVICE } from '../contracts/index.js';
 import { t } from '../core/i18n/index.js';
+import { WINDOWS_DEFAULT_SETTINGS } from '../core/settings/index.js';
 import type { AudioHost } from '../audio/index.js';
 import type { Ducker } from '../platform/index.js';
 
@@ -255,7 +256,7 @@ export async function composePipeline(deps: CompositionDeps): Promise<Compositio
     record,
   );
 
-  let settings: Settings = DEFAULT_SETTINGS;
+  let settings: Settings = WINDOWS_DEFAULT_SETTINGS;
   if (settingsStore !== null) {
     const load = await settingsStore.load();
     settings = load.settings;

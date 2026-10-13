@@ -218,3 +218,60 @@ describe('names and warnings', () => {
     expect(hotkeyWarnings(F13).join(' ')).toContain('swallows F13');
   });
 });
+
+describe('SEZGIR: Shift with the key asks for the other Uzbek alphabet', () => {
+  it('a plain hold is not shifted', () => {
+    const t = new HotkeyTracker(VK.rightControl);
+    t.handle(down(VK.rightControl), 0);
+    expect(t.handle(up(VK.rightControl), 900)).toBe('released');
+    expect(t.holdShifted).toBe(false);
+  });
+
+  it('Shift already down when the key goes down', () => {
+    const t = new HotkeyTracker(VK.rightControl);
+    t.handle(down(VK.leftShift), 0);
+    expect(t.handle(down(VK.rightControl), 50)).toBe('pressed');
+    expect(t.holdShifted).toBe(true);
+    expect(t.handle(up(VK.rightControl), 900)).toBe('released');
+    expect(t.holdShifted).toBe(true);
+  });
+
+  it('Shift pressed during the hold — even released again before the key — and it is not a chord', () => {
+    const t = new HotkeyTracker(VK.rightControl);
+    t.handle(down(VK.rightControl), 0);
+    expect(t.handle(down(VK.rightShift), 100)).toBeNull();
+    expect(t.handle(up(VK.rightShift), 400)).toBeNull();
+    expect(t.handle(up(VK.rightControl), 900)).toBe('released');
+    expect(t.holdShifted).toBe(true);
+  });
+
+  it('is decided per hold: the next plain hold is Latin again', () => {
+    const t = new HotkeyTracker(VK.rightControl);
+    t.handle(down(VK.rightControl), 0);
+    t.handle(down(VK.leftShift), 100);
+    t.handle(up(VK.leftShift), 200);
+    t.handle(up(VK.rightControl), 300);
+    t.handle(down(VK.rightControl), 1_000);
+    t.handle(up(VK.rightControl), 1_500);
+    expect(t.holdShifted).toBe(false);
+  });
+
+  it('an ordinary-key binding reads Shift the same way', () => {
+    const t = new HotkeyTracker(F13);
+    t.handle(down(VK.leftShift), 0);
+    expect(t.handle(down(F13), 10)).toBe('pressed');
+    expect(t.handle(up(F13), 500)).toBe('released');
+    expect(t.holdShifted).toBe(true);
+  });
+
+  it('when Shift IS the binding, only the other Shift counts', () => {
+    const t = new HotkeyTracker(VK.rightShift);
+    t.handle(down(VK.rightShift), 0);
+    t.handle(up(VK.rightShift), 500);
+    expect(t.holdShifted).toBe(false);
+    t.handle(down(VK.rightShift), 1_000);
+    t.handle(down(VK.leftShift), 1_100);
+    t.handle(up(VK.rightShift), 1_500);
+    expect(t.holdShifted).toBe(true);
+  });
+});

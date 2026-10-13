@@ -147,14 +147,16 @@ describe('Uzbek orthography', () => {
 });
 
 describe('choosing the language', () => {
-  it('follows the system when the setting is empty, Latin for Uzbek unless it asks for Cyrillic', () => {
+  it('follows a Russian or Uzbek system when the setting is empty, and is Uzbek (Latin) otherwise', () => {
     expect(resolveAppLanguage('', ['ru-RU', 'en-US'])).toBe('ru');
     expect(resolveAppLanguage('', ['uz-UZ'])).toBe('uz-Latn');
     expect(resolveAppLanguage('', ['uz-Latn-UZ'])).toBe('uz-Latn');
     expect(resolveAppLanguage('', ['uz-Cyrl-UZ'])).toBe('uz-Cyrl');
     expect(resolveAppLanguage('', ['de-DE', 'ru'])).toBe('ru');
-    expect(resolveAppLanguage('', ['de-DE', 'fr'])).toBe('en');
-    expect(resolveAppLanguage('', [])).toBe('en');
+    // Sezgir: an English or any other system gets Uzbek; English is one click away.
+    expect(resolveAppLanguage('', ['en-US'])).toBe('uz-Latn');
+    expect(resolveAppLanguage('', ['de-DE', 'fr'])).toBe('uz-Latn');
+    expect(resolveAppLanguage('', [])).toBe('uz-Latn');
   });
 
   it('a chosen language wins, and a value this build does not know follows the system', () => {

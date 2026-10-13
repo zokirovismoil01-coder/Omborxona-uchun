@@ -9,7 +9,7 @@
 
 import { z } from 'zod';
 
-import { ARABIC_ENGINE_CHOICES, DOWNLOADABLE_MODELS, LANGUAGES, type Settings } from '../../contracts/index.js';
+import { ARABIC_ENGINE_CHOICES, DOWNLOADABLE_MODELS, LANGUAGES, UZBEK_SCRIPTS, type Settings } from '../../contracts/index.js';
 
 const language = z.enum(LANGUAGES);
 
@@ -95,6 +95,7 @@ export const SETTINGS_FIELD_SCHEMAS = {
   russianDictations: z.number().int().min(0),
   languageCountsSeeded: z.boolean(),
   arabicEngine: z.enum(ARABIC_ENGINE_CHOICES),
+  uzbekScript: z.enum(UZBEK_SCRIPTS),
 } as const satisfies { [K in keyof Settings]: z.ZodType<Settings[K]> };
 
 /** Every settings key, in declaration order. */

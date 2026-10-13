@@ -1369,3 +1369,31 @@ suite('polish is off unless configured', () => {
     expect(seen).toEqual([null]);
   });
 });
+
+suite('SEZGIR: the Uzbek alphabet, from the setting and from Shift', () => {
+  async function dictateUzbek(settings: Partial<Settings>, shifted: boolean): Promise<Rig> {
+    const r = rig({ settings: { enabledLanguages: ['uz'], defaultLanguage: 'uz', pinnedLanguage: 'uz', ...settings } });
+    r.uzbek.text = 'salom dunyo';
+    await r.controller.start();
+    r.hotkey.down();
+    await flush();
+    r.hotkey.emit({ kind: 'released', alternateScript: shifted });
+    await flush();
+    return r;
+  }
+
+  test('Latin by default; Shift with the key types that dictation in Cyrillic', async () => {
+    expect((await dictateUzbek({}, false)).inserter.inserted).toEqual(['Salom dunyo']);
+    expect((await dictateUzbek({}, true)).inserter.inserted).toEqual(['Салом дунё']);
+  });
+
+  test('with Cyrillic chosen in Settings, Shift gives Latin', async () => {
+    expect((await dictateUzbek({ uzbekScript: 'cyrillic' }, false)).inserter.inserted).toEqual(['Салом дунё']);
+    expect((await dictateUzbek({ uzbekScript: 'cyrillic' }, true)).inserter.inserted).toEqual(['Salom dunyo']);
+  });
+
+  test('History keeps what was typed', async () => {
+    const r = await dictateUzbek({}, true);
+    expect(r.history.entries.map((entry) => entry.result)).toEqual(['Салом дунё']);
+  });
+});

@@ -283,7 +283,19 @@ export interface Settings {
    * user's own pick from the Languages page.
    */
   readonly arabicEngine: ArabicEngineChoice;
+
+  /**
+   * SEZGIR-ONLY. The alphabet Uzbek is typed in: `latin` (the official one, the default) or
+   * `cyrillic`. Recognition, modes and guards always work in Latin; the respelling is the
+   * last step before typing (`src/core/text/cyrillic.ts`). Holding Shift together with the
+   * dictation key types THAT dictation in the other alphabet.
+   */
+  readonly uzbekScript: UzbekScript;
 }
+
+/** The alphabets Uzbek can be typed in. Latin is the official one and the default. */
+export const UZBEK_SCRIPTS = ['latin', 'cyrillic'] as const;
+export type UzbekScript = (typeof UZBEK_SCRIPTS)[number];
 
 /** `auto` (the speed check decides), or the user's explicit pick. */
 export const ARABIC_ENGINE_CHOICES = ['auto', 'cohere', 'fastConformer'] as const;
@@ -344,6 +356,7 @@ export const DEFAULT_SETTINGS: Settings = {
   russianDictations: 0,
   languageCountsSeeded: false,
   arabicEngine: 'auto',
+  uzbekScript: 'latin',
 };
 
 /** Every settings key, for the per-key salvage loop and for tests that must cover all of them. */

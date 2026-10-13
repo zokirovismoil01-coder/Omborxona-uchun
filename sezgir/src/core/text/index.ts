@@ -899,3 +899,5 @@ export function redactSpoken(line: string): string {
   if (quoted !== null) out += `${QUOTE_OPEN}\u2026`;
   return out;
 }
+
+export { inUzbekScript, otherScript, uzbekLatinToCyrillic } from './cyrillic.js';

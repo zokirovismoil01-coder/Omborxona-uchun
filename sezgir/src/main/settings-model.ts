@@ -17,7 +17,7 @@
 // an assertion a test can hold.
 
 import type { SecretStore, Settings } from '../contracts/index.js';
-import { DEFAULT_SETTINGS } from '../contracts/index.js';
+import { WINDOWS_DEFAULT_SETTINGS } from '../core/settings/defaults.js';
 
 import { t } from '../core/i18n/index.js';
 
@@ -287,6 +287,14 @@ function beamOptions(): readonly PickerOption[] {
   ];
 }
 
+/** SEZGIR: the alphabet Uzbek is typed in. */
+function scriptOptions(): readonly PickerOption[] {
+  return [
+    { value: 'latin', label: t('script.latin') },
+    { value: 'cyrillic', label: t('script.cyrillic') },
+  ];
+}
+
 function historyLimitOptions(): readonly PickerOption[] {
   return [
   { value: 0, label: t('s.everything') },
@@ -462,6 +470,22 @@ function sections(): readonly AppSection[] {
           // among those that are on. Automatic detection is simply what the pin's Automatic
           // does among them — there is no separate switch for it any more.
           custom('languageToggles', t('lang.toggles.title'), ['enabledLanguages', 'defaultLanguage']),
+        ],
+      },
+      // SEZGIR: Latin or Cyrillic for Uzbek; Shift with the dictation key picks the other one.
+      {
+        title: t('script.title'),
+        icon: 'globe',
+        controls: [
+          {
+            kind: 'picker',
+            id: 'languages.uzbekScript',
+            settingKey: 'uzbekScript',
+            label: t('script.label'),
+            options: scriptOptions(),
+            style: 'segmented',
+            caption: t('script.caption'),
+          },
         ],
       },
       {
@@ -747,7 +771,7 @@ export const SETTINGS_WITHOUT_CONTROLS: readonly (keyof Settings)[] = [
 
 /** Handy for the renderer: the shipped value of a key. */
 export function shippedDefault<K extends keyof Settings>(key: K): Settings[K] {
-  return DEFAULT_SETTINGS[key];
+  return WINDOWS_DEFAULT_SETTINGS[key];
 }
 
 /** "Good morning" / "Good afternoon" / "Good evening", by the local hour. The Mac's bands. */

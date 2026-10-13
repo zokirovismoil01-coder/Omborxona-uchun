@@ -150,8 +150,10 @@ describe('readiness', () => {
   // All THREE conditions, not two: a detector with no Uzbek model is not ready, because
   // routing to an engine that is not there is worse than not routing at all.
   it('needs something to detect, the detector AND (while Uzbek is on) the Uzbek model', () => {
-    const on = { ...WINDOWS_DEFAULT_SETTINGS };
+    const on = { ...WINDOWS_DEFAULT_SETTINGS, enabledLanguages: ['en', 'ru', 'uz'] as const };
     expect(autoDetectReady({ settings: on, detectorPath: 'd', uzbekPath: 'u' })).toBe(true);
+    // Sezgir's shipped set is Uzbek alone: one family, so nothing to detect.
+    expect(autoDetectReady({ settings: WINDOWS_DEFAULT_SETTINGS, detectorPath: 'd', uzbekPath: 'u' })).toBe(false);
     expect(autoDetectReady({ settings: on, detectorPath: 'd', uzbekPath: null })).toBe(false);
     expect(autoDetectReady({ settings: on, detectorPath: null, uzbekPath: 'u' })).toBe(false);
     // One family on: nothing to detect.

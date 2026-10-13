@@ -47,8 +47,9 @@ describe('settings', () => {
     // FastConformer, or the speed check's pick) + turkishDictations (the user's Turkish history,
     // shared with the Mac by name) + arabicDictations (the same for Arabic, C4 §14.1) + the
     // language decision's (P4, all five shared with the Mac by name): uzbekDictations,
-    // englishDictations, russianDictations, languageCountsSeeded and languageIDModelPath.
-    expect(SETTINGS_KEYS).toHaveLength(47);
+    // englishDictations, russianDictations, languageCountsSeeded and languageIDModelPath
+    // + uzbekScript (Sezgir-only: Uzbek typed in Latin or Cyrillic).
+    expect(SETTINGS_KEYS).toHaveLength(48);
     for (const key of SETTINGS_KEYS) {
       expect(DEFAULT_SETTINGS).toHaveProperty(key);
     }

@@ -8,7 +8,7 @@
 // back from main, instead of being torn down and redrawn mid-flight.
 
 import type { DictationRecord, HistoryEntry, Settings } from '../contracts/index.js';
-import { DEFAULT_SETTINGS } from '../contracts/index.js';
+import { WINDOWS_DEFAULT_SETTINGS } from '../core/settings/defaults.js';
 import type { AppSnapshot, ModeSummary, ModelReport, SettingsSnapshot } from '../main/ipc.js';
 import { IPC_INVOKE, IPC_SEND } from '../main/ipc.js';
 import type { PillAnimationStyle } from '../main/pill-model.js';
@@ -37,7 +37,7 @@ const EMPTY_APP: AppSnapshot = {
 };
 
 class Store {
-  settings: Settings = DEFAULT_SETTINGS;
+  settings: Settings = WINDOWS_DEFAULT_SETTINGS;
   secretPresent = false;
   loadFailure: string | null = null;
   app: AppSnapshot = EMPTY_APP;

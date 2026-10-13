@@ -22,7 +22,7 @@
 //
 // The assertion is one line: `ready === true`, with an empty blocker list.
 
-import { closeSync, mkdirSync, mkdtempSync, openSync, rmSync, writeSync, ftruncateSync } from 'node:fs';
+import { closeSync, mkdirSync, mkdtempSync, openSync, rmSync, writeFileSync, writeSync, ftruncateSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
@@ -103,6 +103,12 @@ beforeEach(() => {
   writeModel(join(models, KNOWN_MODEL_FILES.uzbek[0]));
   writeModel(join(models, KNOWN_MODEL_FILES.russian[0]));
   writeModel(join(models, KNOWN_MODEL_FILES.detector[0]));
+  // Sezgir ships Uzbek alone; these tests are about a machine with all three core languages
+  // switched on, so the settings say so. The fresh-install case has its own test below.
+  writeFileSync(
+    join(root, 'settings.v1.json'),
+    JSON.stringify({ schemaVersion: 1, enabledLanguages: ['en', 'ru', 'uz'], defaultLanguage: 'en' }),
+  );
 
   blockers = [];
   paths = {
@@ -167,6 +173,17 @@ describe('the composition root, against the real platform module', () => {
     // microphone had no host to talk to, and the engine manager had no cpu count.
     expect(pipeline.audio).not.toBeNull();
     expect(pipeline.engines).not.toBeNull();
+
+    await pipeline.dispose();
+  });
+
+  it('a fresh install (no settings file) offers Uzbek alone, with nothing blocking', async () => {
+    rmSync(join(root, 'settings.v1.json'));
+    const pipeline = await compose();
+
+    expect(blockers).toEqual([]);
+    expect(pipeline.settings.enabledLanguages).toEqual(['uz']);
+    expect([...((await pipeline.engines?.readiness())?.availableLanguages ?? [])]).toEqual(['uz']);
 
     await pipeline.dispose();
   });

@@ -6,7 +6,7 @@
 // never routed to — not by the detector, not by Turkish's or Arabic's checks, not by a recovery
 // after the fact — and costs nothing: no stream, no preload, no model kept warm.
 
-import { CORE_LANGUAGES, LANGUAGES, engineFamilyFor, type EngineFamily, type Language } from '../../contracts/language.js';
+import { LANGUAGES, engineFamilyFor, type EngineFamily, type Language } from '../../contracts/language.js';
 import {
   TURKIC_CLUSTER,
   type LanguagePosterior,
@@ -25,15 +25,14 @@ export function languageSubset(languages: Iterable<Language>): LanguageSubset {
 
 export const ALL_LANGUAGES: LanguageSubset = languageSubset(LANGUAGES);
 
-/** Uzbek, English and Russian; Turkish or Arabic also when the system's own language is one. */
-export function presetLanguages(systemLanguages: readonly string[]): LanguageSubset {
-  const on = new Set<Language>(CORE_LANGUAGES);
-  for (const code of systemLanguages) {
-    const primary = (code.split(/[-_]/)[0] ?? '').toLowerCase();
-    if (primary === 'tr') on.add('tr');
-    if (primary === 'ar') on.add('ar');
-  }
-  return languageSubset(on);
+/**
+ * What onboarding offers before the user touches a switch. SEZGIR: Uzbek alone, whatever the
+ * system's own language — the product is an Uzbek dictation tool, and every other language is
+ * a download the user should choose rather than inherit. (The Mac offers en+ru+uz, plus tr or
+ * ar when the system language is one.)
+ */
+export function presetLanguages(_systemLanguages: readonly string[]): LanguageSubset {
+  return languageSubset(['uz']);
 }
 
 export function subsetContains(subset: LanguageSubset, language: Language): boolean {

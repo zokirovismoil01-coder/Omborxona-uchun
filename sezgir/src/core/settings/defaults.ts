@@ -1,10 +1,23 @@
 // The shipped Windows defaults, and the one place they deliberately differ from macOS.
 //
 // PURE. `DEFAULT_SETTINGS` in contracts is the MACOS table, field for field, and the
-// golden fixture pins it — it must not move. This file is the Windows overlay, and it
-// carries exactly one override.
+// golden fixture pins it — it must not move. This file is the Windows overlay: one
+// override inherited from the Kotiba port, and Sezgir's two (Uzbek only).
 
 import { DEFAULT_SETTINGS, type Settings } from '../../contracts/index.js';
+
+/**
+ * SEZGIR DELTAS — Uzbek only out of the box.
+ *
+ * Sezgir is an Uzbek dictation tool. A fresh install dictates Uzbek and nothing else, so
+ * the 668 MB English/Russian model is never downloaded unless the user asks for it, and the
+ * router has nothing to decide (`soleRoute` answers `uz` before any detector runs). English,
+ * Russian, Turkish and Arabic stay one switch away in Settings › Languages.
+ */
+export const SEZGIR_SETTINGS_DELTAS = {
+  defaultLanguage: 'uz',
+  enabledLanguages: ['uz'],
+} as const satisfies Partial<Settings>;
 
 /**
  * WINDOWS DELTA — `preloadAllLanguages` ships TRUE.
@@ -36,6 +49,7 @@ import { DEFAULT_SETTINGS, type Settings } from '../../contracts/index.js';
  */
 export const WINDOWS_SETTINGS_DELTAS = {
   preloadAllLanguages: true,
+  ...SEZGIR_SETTINGS_DELTAS,
 } as const satisfies Partial<Settings>;
 
 /** The values a fresh Windows install starts from. */

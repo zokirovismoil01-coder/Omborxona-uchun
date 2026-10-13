@@ -51,6 +51,7 @@ import type {
   TranscriptDoubt,
   TranscriptionStream,
   TranscriptResult,
+  UzbekScript,
 } from '../contracts/index.js';
 import {
   decisionCodes,
@@ -69,7 +70,7 @@ import {
 } from '../core/routing/index.js';
 import { untilSpeechEnds } from '../core/stt/segmenter.js';
 import { writtenLanguage } from '../core/stt/tdt.js';
-import { quoteSpoken } from '../core/text/index.js';
+import { inUzbekScript, quoteSpoken } from '../core/text/index.js';
 import type { Clock, IncrementalPolishSession, IncrementalPolisher, RoutingPort, TextPort } from './ports.js';
 import { isIncrementalPolisher, systemClock } from './ports.js';
 
@@ -235,6 +236,12 @@ export interface FinishOptions {
   readonly insertAfterPolish: boolean;
   /** The composite chain's remarks, drained onto the record whatever the outcome. */
   drainPolishNotes?(): Promise<readonly string[]>;
+  /**
+   * SEZGIR: the alphabet THIS dictation is typed in when it is Uzbek — the setting, or the
+   * other one when Shift was held with the key. Absent means Latin. Applied to exactly what
+   * is typed (and what the record keeps), after every guard has judged the Latin text.
+   */
+  readonly script?: UzbekScript;
 }
 
 /**
@@ -1430,6 +1437,19 @@ export function createDictationSession(deps: SessionDeps): DictationSession {
       return true;
     }
 
+    // SEZGIR: the alphabet it is TYPED in. Everything above judged the Latin text; from here
+    // on, what reaches the user's app — and the record, so History shows what was typed — is
+    // spelled in the script this dictation asked for.
+    const script = options.script ?? 'latin';
+    const spell = (text: string): string => inUzbekScript(text, decision.language, script);
+    const keepSpelling = (): void => {
+      if (decision.language !== 'uz' || script === 'latin') return;
+      note((draft) => {
+        if (typeof draft.result === 'string') draft.result = spell(draft.result);
+        if (typeof draft.polished === 'string') draft.polished = spell(draft.polished);
+      });
+    };
+
     // 6. Insert.
     //
     // `insertAfterPolish` inverts the ordering for a mode whose output is a different
@@ -1446,7 +1466,8 @@ export function createDictationSession(deps: SessionDeps): DictationSession {
           draft.polished = polished;
         });
       }
-      if (!(await insertOrFail(toInsert))) return snapshot();
+      if (!(await insertOrFail(spell(toInsert)))) return snapshot();
+      keepSpelling();
       note((draft) => {
         draft.outcome = 'done';
       });
@@ -1454,7 +1475,7 @@ export function createDictationSession(deps: SessionDeps): DictationSession {
       return snapshot();
     }
 
-    if (!(await insertOrFail(cleaned))) return snapshot();
+    if (!(await insertOrFail(spell(cleaned)))) return snapshot();
 
     // 7. Polish, if asked. Everything past this point is a BONUS: the text the user
     //    wanted is already in their app, so no failure here can fail the session.
@@ -1469,7 +1490,7 @@ export function createDictationSession(deps: SessionDeps): DictationSession {
           // already been through both.
           let replaced: InsertionOutcome;
           try {
-            replaced = await deps.replace(cleaned, polished);
+            replaced = await deps.replace(spell(cleaned), spell(polished));
           } catch (error: unknown) {
             replaced = { kind: 'refused', reason: describe(error) };
           }
@@ -1486,6 +1507,7 @@ export function createDictationSession(deps: SessionDeps): DictationSession {
       }
     }
 
+    keepSpelling();
     note((draft) => {
       draft.outcome = 'done';
     });

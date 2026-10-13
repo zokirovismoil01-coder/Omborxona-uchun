@@ -1321,3 +1321,52 @@ suite('the session is reusable', () => {
     expect((await h.finish()).outcome).toBe('done');
   });
 });
+
+// ---------------------------------------------------------------------------------
+
+suite('SEZGIR: Uzbek in Cyrillic', () => {
+  const UZBEK = { language: 'uz', family: 'uzbek', source: 'pin', turkicMass: null } as const;
+
+  test('types, and records, the Cyrillic spelling when the dictation asks for it', async () => {
+    const h = harness({ route: UZBEK });
+    h.uzbek.text = 'Salom, ertaga Toshkentga boraman.';
+    await h.session.arm();
+    const record = await h.finish({ script: 'cyrillic' });
+
+    expect(record.outcome).toBe('done');
+    expect(h.inserter.inserted).toEqual(['Салом, эртага Тошкентга бораман.']);
+    expect(record.result).toBe('Салом, эртага Тошкентга бораман.');
+    // What the engine said stays as it said it.
+    expect(record.raw).toBe('Salom, ertaga Toshkentga boraman.');
+  });
+
+  test('Latin is the default, and an explicit Latin types Latin', async () => {
+    for (const patch of [{}, { script: 'latin' as const }]) {
+      const h = harness({ route: UZBEK });
+      h.uzbek.text = 'Salom dunyo';
+      await h.session.arm();
+      await h.finish(patch);
+      expect(h.inserter.inserted).toEqual(['Salom dunyo']);
+    }
+  });
+
+  test('only Uzbek is respelled: an English dictation types as said', async () => {
+    const h = harness();
+    await h.session.arm();
+    await h.finish({ script: 'cyrillic' });
+    expect(h.inserter.inserted).toEqual(['hello world']);
+  });
+
+  test('the polish that replaces the inserted text is matched and replaced in Cyrillic too', async () => {
+    const h = harness({ route: UZBEK });
+    h.uzbek.text = 'salom dunyo';
+    const polisher = new FakePolisher('p', new Set<Language>(['uz']), h.clock);
+    polisher.output = 'Salom, dunyo!';
+    await h.session.arm();
+    const record = await h.finish({ polisher, polishInstructions: 'PROMPT', script: 'cyrillic' });
+
+    expect(h.inserter.inserted).toEqual(['салом дунё']);
+    expect(h.inserter.replaced).toEqual([{ previous: 'салом дунё', text: 'Салом, дунё!' }]);
+    expect(record.polished).toBe('Салом, дунё!');
+  });
+});

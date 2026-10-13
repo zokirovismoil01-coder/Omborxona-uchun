@@ -175,6 +175,23 @@ describe('press and hold', () => {
     await h.source.stop();
   });
 
+  it('SEZGIR: says whether Shift was held with the key, on the release', async () => {
+    const plain = harness([`DOWN ${RIGHT_CTRL}`, '@30', `UP ${RIGHT_CTRL}`]);
+    await plain.source.start();
+    plain.endStartupSweep();
+    await waitFor(() => plain.events.length >= 2);
+    expect(plain.events[1]).toEqual({ kind: 'released', alternateScript: false });
+    await plain.source.stop();
+
+    const shifted = harness([`DOWN ${RIGHT_CTRL}`, '@10', 'DOWN 160', '@10', 'UP 160', '@10', `UP ${RIGHT_CTRL}`]);
+    await shifted.source.start();
+    shifted.endStartupSweep();
+    await waitFor(() => shifted.events.length >= 2);
+    expect(kinds(shifted.events)).toEqual(['pressed', 'released']);
+    expect(shifted.events[1]).toEqual({ kind: 'released', alternateScript: true });
+    await shifted.source.stop();
+  });
+
   it('ignores the left-hand key entirely', async () => {
     // Half the keyboard shortcuts on the machine are Left Ctrl. The gesture is the
     // RIGHT key and nothing else — this is the single most expensive thing to get wrong.

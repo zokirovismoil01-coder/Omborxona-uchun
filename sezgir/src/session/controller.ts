@@ -63,6 +63,7 @@ import { detectionWanted } from '../core/settings/models.js';
 
 import { createQuietMicLimiter, quietMicSuspect } from '../core/input-device/index.js';
 import { modeBehaviour } from '../core/modes/index.js';
+import { otherScript } from '../core/text/cyrillic.js';
 import {
   createLanguageIDRouter,
   languagePolicy,
@@ -549,7 +550,7 @@ export function createDictationController(deps: ControllerDeps): DictationContro
     if (hotkeyOff === null) {
       hotkeyOff = deps.hotkey.onEvent((event) => {
         if (event.kind === 'pressed') press();
-        else if (event.kind === 'released') release();
+        else if (event.kind === 'released') release(event.alternateScript === true);
         else cancel(event.reason);
       });
     }
@@ -823,7 +824,8 @@ export function createDictationController(deps: ControllerDeps): DictationContro
     setDictation({ kind: 'listening' });
   }
 
-  function release(): void {
+  /** `alternateScript`: Shift was held with the key — type this one in the other Uzbek alphabet. */
+  function release(alternateScript = false): void {
     if (disposed) return;
     // A key-up with no press waiting for it — a second key-up for one press, a helper
     // restarting mid-chord — opens nothing and clears nothing.
@@ -861,6 +863,7 @@ export function createDictationController(deps: ControllerDeps): DictationContro
         const policy = polishPolicyFor(mode);
 
         const record = await running.finish({
+          script: alternateScript ? otherScript(settings.uzbekScript) : settings.uzbekScript,
           pin: effectivePin(mode, settings, (deps.engines.languageIdentifier?.() ?? null) !== null || deps.engines.detector() !== null),
           polisher,
           polishInstructions: instructions,

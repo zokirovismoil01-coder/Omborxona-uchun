@@ -29,7 +29,15 @@ export const DEFAULT_HOTKEY_VK = 163; // VK_RCONTROL, 0xA3
  */
 export type HotkeyEvent =
   | { readonly kind: 'pressed' }
-  | { readonly kind: 'released' }
+  | {
+      readonly kind: 'released';
+      /**
+       * SEZGIR: Shift was held together with the dictation key at some moment of this hold,
+       * which asks for this dictation in the OTHER Uzbek alphabet (Latin ↔ Cyrillic).
+       * Absent reads as false.
+       */
+      readonly alternateScript?: boolean;
+    }
   | { readonly kind: 'cancelled'; readonly reason: HotkeyCancelReason };
 
 export const HOTKEY_CANCEL_REASONS = ['chord', 'hookRestarted'] as const;

@@ -26,12 +26,13 @@ describe('enabledLanguages', () => {
 
   it('migrates auto-detect off to a pin on the default language', () => {
     expect(parseSettings({ autoDetectLanguage: false, defaultLanguage: 'uz' }).settings.pinnedLanguage).toBe('uz');
-    expect(parseSettings({ autoDetectLanguage: false, pinnedLanguage: 'ru' }).settings.pinnedLanguage).toBe('ru');
+    expect(parseSettings({ autoDetectLanguage: false, pinnedLanguage: 'ru', enabledLanguages: ['en', 'ru', 'uz'] }).settings.pinnedLanguage).toBe('ru');
     expect(parseSettings({ autoDetectLanguage: true }).settings.pinnedLanguage).toBeNull();
   });
 
   it('never loads empty, and keeps the pin and the default inside the set', () => {
-    expect(parseSettings({ enabledLanguages: [] }).settings.enabledLanguages).toEqual(['en', 'ru', 'uz']);
+    // An empty set falls back to the shipped one, which for Sezgir is Uzbek alone.
+    expect(parseSettings({ enabledLanguages: [] }).settings.enabledLanguages).toEqual(['uz']);
     const settled = parseSettings({ enabledLanguages: ['ru', 'en'], pinnedLanguage: 'uz', defaultLanguage: 'uz' }).settings;
     expect(settled.enabledLanguages).toEqual(['en', 'ru']);
     expect(settled.pinnedLanguage).toBeNull();

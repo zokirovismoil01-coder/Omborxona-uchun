@@ -43,6 +43,7 @@ import type {
   Settings,
   SettingsStore,
 } from '../contracts/index.js';
+import { WINDOWS_DEFAULT_SETTINGS } from '../core/settings/index.js';
 import {
   BUNDLE_CATALOGUE,
   ECAPA_LID,
@@ -50,7 +51,6 @@ import {
   LANGUAGES,
   bundleBytes,
   isLanguage,
-  DEFAULT_SETTINGS,
   MODEL_CATALOGUE,
   PUBLIC_MODELS_BASE,
   PUBLIC_MODELS_LIVE,
@@ -259,14 +259,14 @@ function newShell(): Shell {
     blockers: [],
     controller: null,
     engines: null,
-    settings: DEFAULT_SETTINGS,
+    settings: WINDOWS_DEFAULT_SETTINGS,
     modes: {},
     tray: null,
     lastTranscript: null,
     downloading: null,
     level: 0,
     userPickedMode: null,
-    activeModeKey: DEFAULT_SETTINGS.defaultModeKey as ModeKey,
+    activeModeKey: WINDOWS_DEFAULT_SETTINGS.defaultModeKey as ModeKey,
     availableLanguages: ['en'],
     languageOrder: defaultLanguageOrder(),
     lastRecord: null,

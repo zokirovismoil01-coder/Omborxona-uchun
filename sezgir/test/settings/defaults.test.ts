@@ -6,6 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS, SETTINGS_KEYS, type Settings } from '../../src/contracts/index.js';
 import {
   SETTINGS_FIELD_NAMES,
+  SEZGIR_SETTINGS_DELTAS,
   WINDOWS_DEFAULT_SETTINGS,
   WINDOWS_SETTINGS_DELTAS,
 } from '../../src/core/settings/index.js';
@@ -15,11 +16,17 @@ describe('the shipped defaults', () => {
     expect([...SETTINGS_FIELD_NAMES].sort()).toEqual([...SETTINGS_KEYS].sort());
   });
 
-  it('differs from macOS in exactly one place', () => {
+  it('differs from macOS in exactly three places: the Windows preload and Sezgir\'s Uzbek-only pair', () => {
     const differing = SETTINGS_KEYS.filter(
       (key) => JSON.stringify(WINDOWS_DEFAULT_SETTINGS[key]) !== JSON.stringify(DEFAULT_SETTINGS[key]),
     );
-    expect(differing).toEqual(['preloadAllLanguages']);
+    expect(differing.sort()).toEqual(['defaultLanguage', 'enabledLanguages', 'preloadAllLanguages']);
+  });
+
+  it('ships Uzbek alone, dictated and preferred', () => {
+    expect(WINDOWS_DEFAULT_SETTINGS.enabledLanguages).toEqual(['uz']);
+    expect(WINDOWS_DEFAULT_SETTINGS.defaultLanguage).toBe('uz');
+    expect(SEZGIR_SETTINGS_DELTAS).toEqual({ defaultLanguage: 'uz', enabledLanguages: ['uz'] });
   });
 
   // The Windows delta. macOS ships this false and the inventory says plainly that off
@@ -30,7 +37,7 @@ describe('the shipped defaults', () => {
   it('preloads all languages on Windows and does not on macOS', () => {
     expect(DEFAULT_SETTINGS.preloadAllLanguages).toBe(false);
     expect(WINDOWS_DEFAULT_SETTINGS.preloadAllLanguages).toBe(true);
-    expect(WINDOWS_SETTINGS_DELTAS).toEqual({ preloadAllLanguages: true });
+    expect(WINDOWS_SETTINGS_DELTAS).toEqual({ preloadAllLanguages: true, ...SEZGIR_SETTINGS_DELTAS });
   });
 
   it('ships Super as the default mode, not the registry key Message', () => {

@@ -56,10 +56,12 @@ export function isAppLanguage(value: unknown): value is AppLanguage {
 }
 
 /**
- * The language a setting means. `''` (the default) follows the system: the first preferred
- * system language that is one of ours — `ru*` → Русский, `uz-Cyrl*` → Cyrillic, any other
- * `uz*` → Latin (the official script) — else English. An unknown stored value is treated as
- * `''`, so a newer build's language never leaves an older one blank.
+ * The language a setting means. `''` (the default) follows the system where that is Russian or
+ * Uzbek — `ru*` → Русский, `uz-Cyrl*` → Cyrillic, any other `uz*` → Latin (the official
+ * script) — and is Uzbek (Latin) otherwise. SEZGIR: the Mac falls back to English; an Uzbek
+ * product on an English-language Windows (the common case here) speaks Uzbek, and English is
+ * one click away in onboarding's first step and in Settings. An unknown stored value is
+ * treated as `''`, so a newer build's language never leaves an older one blank.
  */
 export function resolveAppLanguage(setting: string, systemLanguages: readonly string[]): AppLanguage {
   if (isAppLanguage(setting)) return setting;
@@ -67,9 +69,8 @@ export function resolveAppLanguage(setting: string, systemLanguages: readonly st
     const tag = raw.replace(/_/gu, '-').toLowerCase();
     if (tag === 'ru' || tag.startsWith('ru-')) return 'ru';
     if (tag === 'uz' || tag.startsWith('uz-')) return tag.includes('cyrl') ? 'uz-Cyrl' : 'uz-Latn';
-    if (tag === 'en' || tag.startsWith('en-')) return 'en';
   }
-  return 'en';
+  return 'uz-Latn';
 }
 
 let current: AppLanguage = 'en';

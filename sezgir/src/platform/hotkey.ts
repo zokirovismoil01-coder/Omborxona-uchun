@@ -269,7 +269,7 @@ export function createHotkeySource(options: HotkeySourceOptions): HotkeySource {
   function deliver(event: 'pressed' | 'released' | 'cancelled' | null): void {
     watchHold();
     if (event === 'pressed') emit({ kind: 'pressed' });
-    else if (event === 'released') emit({ kind: 'released' });
+    else if (event === 'released') emit({ kind: 'released', alternateScript: tracker.holdShifted });
     else if (event === 'cancelled') emit({ kind: 'cancelled', reason: 'chord' });
   }
 

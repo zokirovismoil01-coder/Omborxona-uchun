@@ -97,6 +97,9 @@ const SHORTCUT_MODIFIERS: ReadonlySet<number> = new Set<number>([
   VK.rightWin,
 ]);
 
+/** SEZGIR: either Shift held with the dictation key asks for the other Uzbek alphabet. */
+const SHIFT_CODES: ReadonlySet<number> = new Set<number>([VK.leftShift, VK.rightShift]);
+
 export type HotkeyKind = 'modifier' | 'key';
 
 export function isModifierCode(vk: number): boolean {
@@ -284,6 +287,8 @@ export class HotkeyTracker {
   /** A chord was seen during this hold, so its release is not a dictation. */
   #chorded = false;
   #heldSince = 0;
+  /** SEZGIR: a Shift (not the binding itself) was down at some moment of the latest hold. */
+  #shifted = false;
   /** Every key the stream says is down right now. Repeat detection and the shortcut rule. */
   readonly #down = new Set<number>();
 
@@ -303,6 +308,20 @@ export class HotkeyTracker {
     return this.#held;
   }
 
+  /**
+   * SEZGIR: whether Shift was held with the key at any moment of the current (or, after a
+   * release, the latest) hold — already down when the key went down, or pressed during it.
+   * Shift is chord-neutral, so it never cancels the dictation; it only picks the alphabet.
+   */
+  get holdShifted(): boolean {
+    return this.#shifted;
+  }
+
+  #shiftHeld(): boolean {
+    for (const vk of SHIFT_CODES) if (vk !== this.vk && this.#down.has(vk)) return true;
+    return false;
+  }
+
   /** Whether Ctrl, Alt or a Windows key is down, as far as the stream has said. */
   shortcutModifierHeld(): boolean {
     for (const vk of this.#down) if (SHORTCUT_MODIFIERS.has(vk)) return true;
@@ -313,9 +332,12 @@ export class HotkeyTracker {
     const isRepeat = input.kind === 'down' && this.#down.has(input.vk);
     if (input.kind === 'down') this.#down.add(input.vk);
     else this.#down.delete(input.vk);
-    return this.kind === 'modifier'
+    const event = this.kind === 'modifier'
       ? this.#handleModifier(input, isRepeat, now)
       : this.#handleKey(input, isRepeat);
+    if (event === 'pressed') this.#shifted = this.#shiftHeld();
+    else if (this.#held && input.kind === 'down' && SHIFT_CODES.has(input.vk) && input.vk !== this.vk) this.#shifted = true;
+    return event;
   }
 
   #handleModifier(input: HookInput, isRepeat: boolean, now: number): TrackerEvent | null {

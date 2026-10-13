@@ -97,9 +97,9 @@ describe('LanguageSubset helpers', () => {
     expect(settingLanguage(one, 'en', false)).toBe(one);
     expect([...settingLanguage(one, 'ru', true).languages].sort()).toEqual(['en', 'ru']);
   });
-  it('presets tr/ar only for a Turkish or Arabic system', () => {
-    expect([...presetLanguages(['en-US']).languages].sort()).toEqual(['en', 'ru', 'uz']);
-    expect(presetLanguages(['tr-TR']).languages.has('tr')).toBe(true);
-    expect(presetLanguages(['ar_EG']).languages.has('ar')).toBe(true);
+  it('presets Uzbek alone, whatever the system language (Sezgir)', () => {
+    for (const system of [['en-US'], ['ru-RU'], ['tr-TR'], ['ar_EG'], ['uz-UZ'], []]) {
+      expect([...presetLanguages(system).languages]).toEqual(['uz']);
+    }
   });
 });
