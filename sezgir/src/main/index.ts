@@ -17,7 +17,7 @@ import { existsSync, mkdirSync, writeFileSync, writeSync } from 'node:fs';
 import { readdir, rm, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 
-import { BrowserWindow, app, clipboard, ipcMain, shell } from 'electron';
+import { BrowserWindow, app, clipboard, ipcMain, ipcMain as electronIpcMain, safeStorage, shell } from 'electron';
 
 import { appLanguage, resolveAppLanguage, setAppLanguage, t } from '../core/i18n/index.js';
 import { defaultLanguageOrder, languageCounts, orderLanguages } from '../core/languages/order.js';
@@ -427,6 +427,22 @@ async function start(options: LaunchOptions): Promise<void> {
   let quitting = false;
   const mainWindow = createMainWindow({ mayClose: () => quitting });
 
+  // ---- History, sealed at rest (SEZGIR) ---------------------------------------------
+  // The one file holding what the user SAID. Its key is sealed by DPAPI through safeStorage,
+  // so the file means nothing off this Windows account. A failure here leaves History plain
+  // (as it always was) and says so in the log — never stops dictation.
+  const historyKey = await platform
+    .loadOrCreateHistoryKey({
+      keyPath: join(localDirectory(), platform.HISTORY_KEY_FILE_NAME),
+      historyPath: historyPath(),
+      protector: safeStorage,
+    })
+    .catch((error: unknown) => ({
+      cipher: null,
+      notes: [`history: no key — ${error instanceof Error ? error.message : String(error)}; history is not encrypted`],
+    }));
+  for (const line of historyKey.notes) diagnosticNote(line);
+
   // ---- the pipeline ---------------------------------------------------------------
   const pipeline = await composePipeline({
     platform,
@@ -455,6 +471,7 @@ async function start(options: LaunchOptions): Promise<void> {
     // lowers them, so a start/stop sound of our own is not ducked under the user's music.
     ownPids: () => new Set([process.pid, ...app.getAppMetrics().map((metric) => metric.pid)]),
     duckingMarkerPath: join(localDirectory(), platform.DUCKING_MARKER_NAME),
+    historyCipher: historyKey.cipher,
     // Parakeet (English + Russian) and Qwen3-1.7B (the modes), fetched on first use.
     onDevice: {
       ParakeetEngine: engineModule.ParakeetEngine,
@@ -1325,6 +1342,57 @@ async function dispatch(
   }
 }
 
+// ---- IPC: only Sezgir's own pages may ask (SEZGIR) ------------------------------------
+//
+// Every page is a local `file://` document under a CSP, with navigation and window.open
+// blocked (./windows.ts), so a foreign page should never be in a position to send. This is
+// the second lock on the same door: a message is answered only when it comes from the TOP
+// frame of a window Sezgir created, showing a `file://` page. Anything else — an iframe, a
+// page that somehow navigated away, a webContents nobody here owns — is refused (invoke) or
+// dropped (send), and the log says so.
+
+interface IpcSenderEvent {
+  readonly sender: Electron.WebContents;
+  readonly senderFrame: Electron.WebFrameMain | null;
+}
+
+function isOwnPage(event: IpcSenderEvent, only?: () => Electron.WebContents | null): boolean {
+  const frame = event.senderFrame;
+  if (frame === null || frame.parent !== null) return false;
+  if (!frame.url.startsWith('file:///')) return false;
+  if (only !== undefined) return only() === event.sender;
+  return BrowserWindow.fromWebContents(event.sender) !== null;
+}
+
+/** `ipcMain`, with every listener behind `isOwnPage`. Same calls, same channels. */
+interface TrustedIpc {
+  handle(channel: string, listener: (event: Electron.IpcMainInvokeEvent, ...args: never[]) => unknown): void;
+  on(channel: string, listener: (event: Electron.IpcMainEvent, ...args: never[]) => void): void;
+}
+
+function trustedIpc(only?: () => Electron.WebContents | null): TrustedIpc {
+  return {
+    handle(channel, listener) {
+      electronIpcMain.handle(channel, (event, ...args: unknown[]) => {
+        if (!isOwnPage(event, only)) {
+          diagnosticNote(`ipc: refused ${channel} from a sender that is not one of Sezgir's pages`);
+          throw new Error(`${channel}: refused`);
+        }
+        return listener(event, ...(args as never[]));
+      });
+    },
+    on(channel, listener) {
+      electronIpcMain.on(channel, (event, ...args: unknown[]) => {
+        if (!isOwnPage(event, only)) {
+          diagnosticNote(`ipc: dropped ${channel} from a sender that is not one of Sezgir's pages`);
+          return;
+        }
+        listener(event, ...(args as never[]));
+      });
+    },
+  };
+}
+
 function registerIpc(deps: {
   readonly state: Shell;
   readonly settingsStore: SettingsStore | null;
@@ -1337,6 +1405,7 @@ function registerIpc(deps: {
 }): void {
   const { state, settingsStore, secrets, history, diagnostics, models, mainWindow, lifecycle } = deps;
   const settingsWindow = mainWindow;
+  const ipcMain = trustedIpc();
 
   const secretPresent = (): Promise<boolean> => secretIsPresent(secrets, state.settings.polishKeyAccount);
 
@@ -1750,6 +1819,8 @@ function registerIpc(deps: {
  * capture failure turned into a BLOCKER rather than a silently dead microphone.
  */
 function wireAudioChannel(audioWindow: BrowserWindow, state: Shell, hud: BrowserWindow): void {
+  // The capture page and nothing else may report levels and failures.
+  const ipcMain = trustedIpc(() => (audioWindow.isDestroyed() ? null : audioWindow.webContents));
   const showLevel = (peak: unknown): void => {
     state.level = typeof peak === 'number' ? peak : 0;
     if (!hud.isDestroyed()) hud.webContents.send(IPC_SEND.levelChanged, state.level);

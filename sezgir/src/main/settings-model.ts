@@ -410,37 +410,10 @@ function sections(): readonly AppSection[] {
             caption: COPY.polish,
           },
           custom('polishStatus', t('s.what_will_run')),
-          {
-            kind: 'toggle',
-            id: 'polish.uzbek',
-            settingKey: 'polishUzbek',
-            label: t('s.let_a_model_rewrite_uzbek_too'),
-            caption: COPY.polishUzbek,
-          },
-          {
-            kind: 'text',
-            id: 'polish.baseURL',
-            settingKey: 'polishBaseURL',
-            label: t('s.endpoint'),
-            placeholder: 'https://api.groq.com/openai/v1',
-            caption: null,
-          },
-          {
-            kind: 'text',
-            id: 'polish.model',
-            settingKey: 'polishModel',
-            label: t('s.model'),
-            placeholder: 'openai/gpt-oss-120b',
-            caption: null,
-          },
-          {
-            kind: 'secret',
-            id: 'polish.apiKey',
-            settingKey: null,
-            account: 'polishKeyAccount',
-            label: t('s.api_key'),
-            caption: COPY.polishKey,
-          },
+          // SEZGIR: no cloud endpoint, model name or API key here. The modes run on this PC
+          // (rules plus Qwen3-1.7B) and nothing on the Windows path ever sent text to an
+          // endpoint, so fields that suggested otherwise — and a key stored for nothing —
+          // are gone. See `NO_SECRETS` in ./compose.ts.
           {
             kind: 'slider',
             id: 'polish.timeout',
@@ -755,7 +728,11 @@ export function boundSettingsKeys(): ReadonlySet<keyof Settings> {
 export const SETTINGS_WITHOUT_CONTROLS: readonly (keyof Settings)[] = [
   'turkicThreshold',
   'polishFallbackModel',
-  'polishKeyAccount', // named by the secret control; not typed by the user
+  'polishKeyAccount', // SEZGIR: no secret control and no key — see NO_SECRETS in ./compose.ts
+  // SEZGIR: the Mac's cloud endpoint. Read by nothing on Windows, so no field pretends otherwise.
+  'polishBaseURL',
+  'polishModel',
+  'polishUzbek',
   'preferOnDeviceModel', // no on-device model exists on Windows
   'acceptedDownloads', // written by onboarding's Download models step and the Download buttons
   'turkishDictations', // a count the controller keeps for the Turkish check, not a choice

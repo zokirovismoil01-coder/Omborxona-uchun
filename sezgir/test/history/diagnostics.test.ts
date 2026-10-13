@@ -167,12 +167,15 @@ describe('the line format', () => {
 });
 
 describe('reading back', () => {
-  it('round-trips every record', async () => {
+  it('round-trips every record — less its words, which it keeps as a count (SEZGIR)', async () => {
     const store = sink();
     await store.open();
-    const one = record({ engineID: 'turbo', raw: 'hello', result: 'Hello', modeKey: 'super' });
+    const one = record({ engineID: 'turbo', raw: 'hello there', result: 'Hello there', modeKey: 'super' });
     await store.append(one);
-    expect(await store.records()).toEqual([one]);
+    const { raw: _raw, result: _result, ...kept } = one;
+    expect(await store.records()).toEqual([{ ...kept, words: 2 }]);
+    const onDisk = await fs.readFile(file, 'utf8');
+    expect(onDisk).not.toMatch(/hello|there/iu);
   });
 
   it('costs one corrupt line that line and not the file', async () => {
@@ -301,7 +304,7 @@ describe('the summary', () => {
   // speaker: which words a guard refused, what the Uzbek engine answered. Before, a Message
   // sentence whose rewrite lost two words printed those two words into the text a user
   // pastes into a bug report.
-  it('redacts notes that quote the speaker, and keeps them in the record', async () => {
+  it('redacts notes that quote the speaker, in the summary AND on disk (SEZGIR)', async () => {
     const store = sink();
     await store.open();
     const dropped = checkRewrite(
@@ -328,7 +331,10 @@ describe('the summary', () => {
     }
     expect(summary).toContain('did not say');
     expect(summary).toContain('\u00AB2 words\u00BB');
-    expect((await store.records())[0]?.errors.join(' ')).toContain('dentist');
+    const onDisk = await fs.readFile(file, 'utf8');
+    for (const word of ['dentist', 'today', 'keçşurun', 'salom', 'kelajak']) {
+      expect(onDisk, word).not.toContain(word);
+    }
   });
 
   it('honours its limit', async () => {

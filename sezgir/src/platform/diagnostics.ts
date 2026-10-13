@@ -87,11 +87,27 @@ export function encodeDiagnosticsLine(
   environment: DiagnosticsEnvironment,
   record: DictationRecord,
 ): string {
+  // SEZGIR: NO TRANSCRIPT TEXT ON DISK. The record arrives carrying what was said (`raw`,
+  // `result`, `polished`); the log keeps how many words it came to and nothing of the words,
+  // and every note is written through `redactSpoken`, so a note that quoted the speaker keeps
+  // the quote's length only. History — sealed at rest — is the one place the text lives.
+  const { raw: _raw, result: _result, polished: _polished, ...rest } = record;
+  const words = typeof record.words === 'number' ? record.words : wordsIn(record.polished ?? record.result);
   const line = {
     environment,
-    record: { ...record, route: encodeRoute(record.route) },
+    record: {
+      ...rest,
+      ...(words === null ? {} : { words }),
+      errors: record.errors.map(redactSpoken),
+      route: encodeRoute(record.route),
+    },
   };
   return stableStringify(withoutAbsent(line));
+}
+
+function wordsIn(text: string | undefined): number | null {
+  if (text === undefined) return null;
+  return text.split(/\s+/u).filter((word) => word.length > 0).length;
 }
 
 function decodeLine(line: string): DictationRecord | null {

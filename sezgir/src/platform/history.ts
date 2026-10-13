@@ -21,6 +21,7 @@ import {
 } from '../contracts/index.js';
 import { stableStringify } from '../core/settings/index.js';
 
+import { isSealedLine, type LineCipher } from './history-cipher.js';
 import { writeFileAtomic } from './settings.js';
 
 export { groupByLocalDay, localDayKey } from '../core/settings/index.js';
@@ -134,12 +135,30 @@ export interface FileHistoryStore extends HistoryStore {
 export interface FileHistoryStoreOptions {
   /** `%LOCALAPPDATA%\Sezgir\history.jsonl`. */
   readonly path: string;
+  /**
+   * SEZGIR: seals every line written and opens every sealed line read (`./history-cipher.ts`).
+   * Absent, lines are plain JSON as before. Plain lines found by a store that HAS a cipher are
+   * read, then the whole file is rewritten sealed — an upgrade encrypts the history it found.
+   */
+  readonly cipher?: LineCipher | null;
 }
 
 export function createFileHistoryStore(options: FileHistoryStoreOptions): FileHistoryStore {
   const file = options.path;
+  const cipher = options.cipher ?? null;
   /** id → entry. The index IS the store once `open()` has run; the file is the log. */
   const entries = new Map<string, HistoryEntry>();
+  /**
+   * Sealed lines this store could not open (no key this launch, or another key's). Kept
+   * byte for byte through every rewrite: a launch where Windows could not unseal the key must
+   * not turn the next delete into the loss of everything sealed. Only "clear all" drops them.
+   */
+  const unopened: string[] = [];
+
+  function encodeLine(entry: HistoryEntry): string {
+    const json = encodeEntry(entry);
+    return cipher === null ? json : cipher.seal(json);
+  }
   const notes: string[] = [];
   let opened = false;
 
@@ -152,13 +171,13 @@ export function createFileHistoryStore(options: FileHistoryStoreOptions): FileHi
    * append path is what carries the per-dictation cost, and it stays an append.
    */
   async function rewrite(): Promise<void> {
-    const lines = [...entries.values()].sort(newestFirst).map(encodeEntry);
+    const lines = [...[...entries.values()].sort(newestFirst).map(encodeLine), ...unopened];
     await writeFileAtomic(file, lines.length === 0 ? '' : `${lines.join('\n')}\n`);
   }
 
   async function append(entry: HistoryEntry): Promise<void> {
     await fs.mkdir(path.dirname(file), { recursive: true });
-    await fs.appendFile(file, `${encodeEntry(entry)}\n`, 'utf8');
+    await fs.appendFile(file, `${encodeLine(entry)}\n`, 'utf8');
   }
 
   return {
@@ -179,9 +198,20 @@ export function createFileHistoryStore(options: FileHistoryStoreOptions): FileHi
       }
 
       let corrupt = 0;
+      let plain = 0;
       for (const line of raw.split('\n')) {
         if (line.trim() === '') continue;
-        const entry = decodeEntry(line);
+        let json: string | null = line;
+        if (isSealedLine(line)) {
+          json = cipher?.open(line) ?? null;
+          if (json === null) {
+            unopened.push(line);
+            continue;
+          }
+        } else {
+          plain += 1;
+        }
+        const entry = decodeEntry(json);
         if (entry === null) {
           // One corrupt line costs that line, never the file. A crash mid-append leaves
           // a partial last line, and losing every earlier dictation to it would be a
@@ -194,8 +224,14 @@ export function createFileHistoryStore(options: FileHistoryStoreOptions): FileHi
         entries.set(entry.id, entry);
       }
       if (corrupt > 0) notes.push(`skipped ${corrupt} unreadable history line(s)`);
+      if (unopened.length > 0) notes.push(`kept ${unopened.length} sealed history line(s) this key cannot open`);
 
       opened = true;
+      // An older file, or one written while Windows offered no protection: seal it now.
+      if (cipher !== null && plain > 0) {
+        await rewrite();
+        notes.push(`sealed ${plain} plain history line(s)`);
+      }
     },
 
     async insert(entry: HistoryEntry): Promise<void> {
@@ -255,6 +291,7 @@ export function createFileHistoryStore(options: FileHistoryStoreOptions): FileHi
 
     async clearAll(): Promise<void> {
       entries.clear();
+      unopened.length = 0;
       await writeFileAtomic(file, '');
     },
 

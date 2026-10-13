@@ -177,6 +177,26 @@ describe('the composition root, against the real platform module', () => {
     await pipeline.dispose();
   });
 
+  it('SEZGIR: keeps no API key anywhere — the secret store holds nothing and refuses a write', async () => {
+    const pipeline = await compose();
+    expect(await pipeline.secrets?.get('polish-default')).toBeNull();
+    await expect(pipeline.secrets?.set('polish-default', 'sk-anything')).rejects.toThrow(/keeps no API keys/u);
+    await pipeline.dispose();
+  });
+
+  it('SEZGIR: hands the history cipher to the history store', async () => {
+    const { createAesGcmLineCipher } = await import('../../src/platform/history-cipher.js');
+    const pipeline = await compose({ historyCipher: createAesGcmLineCipher(Buffer.alloc(32, 1)) });
+    await pipeline.history?.open();
+    await pipeline.history?.insert({
+      id: 'x', startedAt: '2026-10-13T10:00:00.000Z', language: 'uz', engineID: 'e',
+      raw: 'maxfiy gap', result: 'maxfiy gap', polished: null, audioSeconds: 1, audioPath: null,
+    });
+    const { readFileSync } = await import('node:fs');
+    expect(readFileSync(join(root, 'history.jsonl'), 'utf8')).not.toContain('maxfiy');
+    await pipeline.dispose();
+  });
+
   it('a fresh install (no settings file) offers Uzbek alone, with nothing blocking', async () => {
     rmSync(join(root, 'settings.v1.json'));
     const pipeline = await compose();

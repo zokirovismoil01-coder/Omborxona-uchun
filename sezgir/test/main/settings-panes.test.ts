@@ -159,9 +159,10 @@ describe('the controls whose ranges and options are behaviour', () => {
     expect(control('modes.modeCards')).toMatchObject({ writes: ['defaultModeKey'] });
   });
 
-  it('the API key is never a settings key', () => {
-    const secret = allControls().find((c) => c.kind === 'secret');
-    expect(secret?.settingKey).toBeNull();
+  it('SEZGIR: there is no API key field, no endpoint and no cloud model to fill in', () => {
+    expect(allControls().find((c) => c.kind === 'secret')).toBeUndefined();
+    const ids = allControls().map((c) => c.id);
+    for (const gone of ['polish.apiKey', 'polish.baseURL', 'polish.model', 'polish.uzbek']) expect(ids).not.toContain(gone);
     expect(JSON.stringify(DEFAULT_SETTINGS).toLowerCase()).not.toContain('sk-');
   });
 

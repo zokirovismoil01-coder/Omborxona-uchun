@@ -32,6 +32,8 @@ export function finalText(record: DictationRecord): string | null {
 }
 
 export function wordCount(record: DictationRecord): number {
+  // SEZGIR: the log keeps the count, never the text.
+  if (typeof record.words === 'number') return record.words;
   const text = finalText(record);
   if (text === null) return 0;
   return text.split(/\s+/u).filter((word) => word.length > 0).length;

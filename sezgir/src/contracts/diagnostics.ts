@@ -63,6 +63,12 @@ export interface DictationRecord {
   readonly polished?: string;
   readonly raw?: string;
   readonly result?: string;
+  /**
+   * SEZGIR: the word count of what was typed. The diagnostics LOG keeps this instead of
+   * `raw` / `result` / `polished`, which never reach the disk there (src/platform/
+   * diagnostics.ts) — the statistics need how many words, never which.
+   */
+  readonly words?: number;
   /** Omitted when the dictation never got as far as routing. */
   readonly route?: RouteDecision;
   /** Milliseconds per stage. A missing stage did not run, and that is diagnostic. */

@@ -366,6 +366,33 @@ ClipboardSnapshot SnapshotClipboard() {
   return snapshot;
 }
 
+/// SEZGIR: what a dictation is while it sits on the borrowed clipboard — private. Windows 10
+/// 1809+ reads three registered formats on a clipboard write: with these set, the text is
+/// kept out of the Win+V clipboard history, out of Cloud Clipboard sync to the user's other
+/// devices, and is skipped by clipboard monitors that honour the convention. Older Windows
+/// ignores unknown formats, so this is best effort and never a reason to refuse the paste.
+/// Must be called with the clipboard open, after the text itself is set.
+void MarkClipboardPrivate() {
+  static const UINT kExclude = RegisterClipboardFormatW(L"ExcludeClipboardContentFromMonitorProcessing");
+  static const UINT kHistory = RegisterClipboardFormatW(L"CanIncludeInClipboardHistory");
+  static const UINT kCloud = RegisterClipboardFormatW(L"CanUploadToCloudClipboard");
+  const UINT formats[] = {kExclude, kHistory, kCloud};
+  for (const UINT format : formats) {
+    if (format == 0) continue;
+    const DWORD value = 0;
+    const HGLOBAL block = GlobalAlloc(GMEM_MOVEABLE, sizeof(value));
+    if (block == nullptr) continue;
+    void* target = GlobalLock(block);
+    if (target == nullptr) {
+      GlobalFree(block);
+      continue;
+    }
+    std::memcpy(target, &value, sizeof(value));
+    GlobalUnlock(block);
+    if (SetClipboardData(format, block) == nullptr) GlobalFree(block);
+  }
+}
+
 bool WriteClipboardText(const std::wstring& text) {
   const SIZE_T bytes = (text.size() + 1) * sizeof(wchar_t);
   const HGLOBAL block = GlobalAlloc(GMEM_MOVEABLE, bytes);
@@ -390,6 +417,7 @@ bool WriteClipboardText(const std::wstring& text) {
     GlobalFree(block);
     return false;
   }
+  MarkClipboardPrivate();
   CloseClipboard();
   return true;
 }

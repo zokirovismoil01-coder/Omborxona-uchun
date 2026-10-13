@@ -100,6 +100,13 @@ export { createFileSettingsStore as createSettingsStore } from './settings.js';
  * and no diacritic folding, because the okina is a letter.
  */
 export { createFileHistoryStore as createHistoryStore } from './history.js';
+export {
+  HISTORY_KEY_FILE_NAME,
+  createAesGcmLineCipher,
+  loadOrCreateHistoryKey,
+  type KeyProtector,
+  type LineCipher,
+} from './history-cipher.js';
 
 /**
  * `diagnostics.jsonl`, append-only, one `{environment, record}` object per line,

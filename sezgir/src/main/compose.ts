@@ -31,7 +31,6 @@ import type {
   Settings,
   SettingsStore,
 } from '../contracts/index.js';
-import { CREDENTIAL_SERVICE } from '../contracts/index.js';
 import { t } from '../core/i18n/index.js';
 import { WINDOWS_DEFAULT_SETTINGS } from '../core/settings/index.js';
 import type { AudioHost } from '../audio/index.js';
@@ -55,6 +54,19 @@ import { createEngines, logicalProcessorCount } from './engine-wiring.js';
  * fails here seven times over and reads as seven unrelated machine problems. Nothing but
  * a test that builds the real thing can tell those two apart, which is why one exists.
  */
+
+/**
+ * SEZGIR: the secret store Sezgir uses — one that holds nothing. Every read is "no key";
+ * a write is refused out loud rather than kept somewhere the user did not choose.
+ */
+export const NO_SECRETS: SecretStore = {
+  get: async () => null,
+  set: async () => {
+    throw new Error('Sezgir keeps no API keys: every mode runs on this PC');
+  },
+  remove: async () => undefined,
+};
+
 export function attempt<T>(
   blocker: Blocker,
   build: () => T,
@@ -161,6 +173,11 @@ export interface CompositionDeps {
   readonly ownPids?: () => ReadonlySet<number>;
   /** Where the "ducked from X" marker lives. Beside the history. */
   readonly duckingMarkerPath?: string;
+  /**
+   * SEZGIR: seals History at rest (AES-256-GCM, key sealed by Windows DPAPI). Built by `src/main`,
+   * which alone may touch Electron's `safeStorage`. Absent or `null`: History is plain JSONL.
+   */
+  readonly historyCipher?: import('../platform/index.js').LineCipher | null;
   /** Parakeet and Qwen. See `OnDeviceModule`. */
   readonly onDevice?: OnDeviceModule;
   /**
@@ -277,7 +294,7 @@ export async function composePipeline(deps: CompositionDeps): Promise<Compositio
       headline: t('blk.history_could_not_be_opened'),
       detail: t('blk.nothing_you_dictate_is_being_saved'),
     },
-    () => platform.createHistoryStore({ path: paths.historyPath }),
+    () => platform.createHistoryStore({ path: paths.historyPath, cipher: deps.historyCipher ?? null }),
     record,
   );
   const diagnostics = attempt<DiagnosticsSink>(
@@ -293,15 +310,10 @@ export async function composePipeline(deps: CompositionDeps): Promise<Compositio
       }),
     record,
   );
-  const secrets = attempt<SecretStore>(
-    {
-      id: 'settings',
-      headline: t('blk.the_credential_store_could_not_be'),
-      detail: t('blk.your_polish_api_key_cannot_be'),
-    },
-    () => platform.createSecretStore({ service: CREDENTIAL_SERVICE }),
-    record,
-  );
+  // SEZGIR: no credential store. Nothing on the Windows path sends text to an endpoint, so
+  // there is no key to keep — and not opening Credential Manager (a PowerShell `Add-Type`
+  // per read) removes a whole way for a secret to be read, written or leaked.
+  const secrets: SecretStore = NO_SECRETS;
 
   const models = deps.engines.createModelStore({
     modelsDirectory: paths.modelsDirectory,

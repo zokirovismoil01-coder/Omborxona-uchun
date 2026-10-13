@@ -58,6 +58,12 @@ detached thread. Exists because unicode injection is not universal: an applicati
 reads scan codes rather than characters ignores a `KEYEVENTF_UNICODE` event *silently*,
 and `SendInput` still reports success because the event was injected, not consumed.
 
+The text written to the clipboard is marked private (Sezgir): the registered formats
+`ExcludeClipboardContentFromMonitorProcessing`, `CanIncludeInClipboardHistory = 0` and
+`CanUploadToCloudClipboard = 0` go on beside it, so on Windows 10 1809 and later a
+dictation never enters the Win+V history, never syncs to the user's other devices, and is
+skipped by clipboard monitors that honour the convention.
+
 **`auto`** — unicode, falling back to the clipboard when `SendInput` refuses to inject.
 It cannot detect an application that accepts the injection and ignores it; that case
 needs `path: "clipboard"` from the caller.

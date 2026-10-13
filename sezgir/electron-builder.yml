@@ -29,7 +29,7 @@
 
 appId: uz.sezgir.win
 productName: Sezgir
-copyright: Copyright © Sezgir
+copyright: Copyright © 2026 Sezgir contributors; based on Kotiba © 2026 Aziz Nizom (MIT)
 
 directories:
   # NOT "dist" — tsc already owns that name (see tsconfig.json's outDir) and the two
@@ -156,6 +156,24 @@ asarUnpack:
 # D-W7). Skipping it is one less step that can fail on a runner nobody can log into; a
 # rebuild would also try to compile llama.cpp from source.
 npmRebuild: false
+
+# SEZGIR: Electron's fuses, flipped in the binary itself at package time, so no environment
+# variable or command-line flag can turn them back on for an installed Sezgir.
+#   - NODE_OPTIONS / NODE_EXTRA_CA_CERTS ignored: nobody can inject code or a CA through the
+#     environment of a process that sees the microphone and types into every app.
+#   - --inspect / --inspect-brk ignored: no debugger can be attached to a running Sezgir.
+#   - the app loads only from app.asar, never from a loose `app/` folder dropped beside it.
+#   - Chromium's cookie store is encrypted with the OS key (Sezgir keeps none; it is free).
+# `runAsNode` STAYS ON, deliberately: the crash watchdog (src/main/watchdog.ts) is Sezgir.exe
+# run as plain Node, and `--check`'s fallback engine host is forked the same way. Asar
+# integrity validation is not switched on: it needs the archive's hash embedded at signing
+# time, and an unsigned build that turned it on would refuse to start.
+electronFuses:
+  runAsNode: true
+  enableCookieEncryption: true
+  enableNodeOptionsEnvironmentVariable: false
+  enableNodeCliInspectArguments: false
+  onlyLoadAppFromAsar: true
 
 extraResources:
   # C4: the standard 3 s Arabic clip Cohere's first-run speed check decodes (96 KB, FLEURS
