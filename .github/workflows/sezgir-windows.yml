@@ -1,0 +1,230 @@
+# Sezgir (Windows) — tekshiruv, yig'ish va o'rnatuvchini Releases'ga joylash.
+#
+# Two jobs, as in Kotiba's own windows-port.yml that this is adapted from:
+#   logic — the gate (layering, typecheck, lint, every unit test) on Linux, in about a minute;
+#   build — the parts that need a real Windows box: whisper.cpp and the three native helpers
+#           with MSVC, the gate again on Windows, the models fetched and sha256-verified, the
+#           installer packaged and checked, a headless `Sezgir.exe --check` over the committed
+#           WAV fixtures, and the installer published as a RELEASE ASSET (a ~0.7 GB file does
+#           not fit the Free plan's 500 MB artifact storage; a release asset allows 2 GB).
+#
+# The Sezgir release is published with `--latest=false`, so the Android APK release stays
+# the repository's "latest" and README's APK download link keeps working.
+
+name: Sezgir (Windows)
+
+on:
+  push:
+    branches: [main, 'claude/kind-faraday-w4yb4l']
+    paths:
+      - 'sezgir/**'
+      - '.github/workflows/sezgir-windows.yml'
+  pull_request:
+    paths:
+      - 'sezgir/**'
+      - '.github/workflows/sezgir-windows.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: sezgir-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  logic:
+    name: gate (typecheck, lint, tests, layering)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Nothing here runs Electron or a model; skip the big binary downloads.
+      ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      ONNXRUNTIME_NODE_INSTALL: skip
+      NODE_LLAMA_CPP_SKIP_DOWNLOAD: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: sezgir/package-lock.json
+      - name: gate
+        run: bash sezgir/scripts/gate.sh
+
+  build:
+    name: build, smoke, release (windows-latest)
+    needs: logic
+    runs-on: windows-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      WHISPER_TAG: v1.9.2
+      MODELS_DIR: sezgir/fixtures/models
+      NATIVE_INSTALL_DIR: sezgir/resources/native
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: sezgir/package-lock.json
+
+      - name: npm ci
+        working-directory: sezgir
+        run: npm ci --no-audit --no-fund
+
+      # whisper.cpp, CPU only, baseline ISA (AVX2, no AVX-512, GGML_NATIVE off) so the binary
+      # runs on every machine it is installed on, not only on the runner that built it.
+      - name: Identify the CPU for the cache key
+        id: cpu
+        shell: pwsh
+        run: |
+          $m = ((Get-CimInstance Win32_Processor).Name -join '-') -replace '[^A-Za-z0-9]','-'
+          "model=$m" | Out-File -FilePath $env:GITHUB_OUTPUT -Append
+          "cpu: $m"
+
+      - name: Cache the whisper.cpp build
+        id: wcpp-cache
+        uses: actions/cache@v4
+        with:
+          path: wcpp
+          key: wcpp-${{ env.WHISPER_TAG }}-cpu-nonative-${{ runner.os }}-${{ steps.cpu.outputs.model }}
+
+      - name: Build whisper.cpp, CPU only, baseline ISA
+        if: steps.wcpp-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          git clone --depth 1 --branch "$WHISPER_TAG" https://github.com/ggml-org/whisper.cpp wcpp
+          cmake -S wcpp -B wcpp/build -DCMAKE_BUILD_TYPE=Release \
+                -DGGML_NATIVE=OFF \
+                -DGGML_AVX=ON -DGGML_AVX2=ON -DGGML_AVX512=OFF \
+                -DGGML_FMA=ON -DGGML_F16C=ON \
+                -DWHISPER_BUILD_TESTS=OFF -DWHISPER_BUILD_EXAMPLES=ON -DWHISPER_BUILD_SERVER=OFF
+          cmake --build wcpp/build --config Release -j 2 --target whisper-cli
+
+      - name: Prove the whisper.cpp build runs here
+        shell: bash
+        run: |
+          CLI=$(find wcpp/build -iname 'whisper-cli.exe' | head -1)
+          if [ -z "$CLI" ]; then echo "::error::no whisper-cli.exe was built"; exit 1; fi
+          "$CLI" --help >/dev/null 2>&1 || { echo "::error::whisper-cli will not run here — bump the wcpp cache key"; exit 1; }
+          echo "it runs: $CLI"
+
+      - name: Build native/sezgir-stt (whisper.cpp host)
+        shell: bash
+        run: |
+          cmake -S sezgir/native/sezgir-stt -B build/sezgir-stt \
+                -A x64 -DCMAKE_BUILD_TYPE=Release \
+                -DSEZGIR_WHISPER_SOURCE_DIR="$(pwd)/wcpp"
+          cmake --build build/sezgir-stt --config Release -j 2
+          cmake --install build/sezgir-stt --config Release --prefix "$NATIVE_INSTALL_DIR"
+
+      - name: Build native/sezgir-hook (push-to-talk key watcher)
+        shell: bash
+        run: |
+          cmake -S sezgir/native/sezgir-hook -B build/sezgir-hook -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/sezgir-hook --config Release -j 2
+          cmake --install build/sezgir-hook --config Release --prefix "$NATIVE_INSTALL_DIR"
+
+      - name: Build native/sezgir-input (typing and paste)
+        shell: bash
+        run: |
+          cmake -S sezgir/native/sezgir-input -B build/sezgir-input -A x64 -DCMAKE_BUILD_TYPE=Release
+          cmake --build build/sezgir-input --config Release -j 2
+          cmake --install build/sezgir-input --config Release --prefix "$NATIVE_INSTALL_DIR"
+
+      - name: List what got installed
+        shell: bash
+        run: find "$NATIVE_INSTALL_DIR" -type f
+
+      # The same tests again, on Windows: path building and local-day bucketing are exactly
+      # where a port silently differs.
+      - name: gate, again, on Windows
+        shell: bash
+        run: bash sezgir/scripts/gate.sh
+
+      - name: Compile TypeScript
+        working-directory: sezgir
+        run: npm run build
+
+      - name: Cache the models
+        id: models-cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.MODELS_DIR }}
+          key: sezgir-models-${{ hashFiles('sezgir/models-manifest.json', 'sezgir/src/contracts/models.ts', 'sezgir/src/contracts/bundles.ts') }}
+
+      # Every file is checked against the sha256 pinned in src/contracts — a model that is
+      # not byte for byte the expected one fails the build here, never on a user's PC.
+      - name: Fetch and sha256-verify the models
+        shell: bash
+        working-directory: sezgir
+        run: node scripts/fetch-models.mjs --manifest models-manifest.json --dest fixtures/models
+
+      - name: Package with electron-builder
+        working-directory: sezgir
+        run: npx electron-builder --win --x64 --publish never --config.directories.output=release
+
+      - name: Assert the installer is plausible
+        shell: bash
+        working-directory: sezgir
+        run: |
+          INSTALLER=$(find release -maxdepth 1 -iname 'Sezgir-Setup-*.exe' | head -1)
+          if [ -z "$INSTALLER" ]; then echo "::error::electron-builder produced no Sezgir-Setup .exe"; exit 1; fi
+          BYTES=$(stat -c%s "$INSTALLER" 2>/dev/null || stat -f%z "$INSTALLER")
+          echo "installer: $INSTALLER ($BYTES bytes)"
+          if [ "$BYTES" -lt 550000000 ]; then
+            echo "::error::installer is implausibly small ($BYTES bytes) for one that carries the Uzbek model"
+            exit 1
+          fi
+          echo "$INSTALLER" > installer-path.txt
+
+      - name: Verify the installer's contents
+        shell: bash
+        working-directory: sezgir
+        run: node scripts/verify-installer.mjs "$(cat installer-path.txt)"
+
+      - name: Smoke test — Sezgir.exe --check over the committed WAV fixtures
+        timeout-minutes: 10
+        shell: bash
+        working-directory: sezgir
+        run: |
+          APP=$(find release/win-unpacked -maxdepth 1 -iname 'Sezgir.exe' | head -1)
+          if [ -z "$APP" ]; then echo "::error::no Sezgir.exe in release/win-unpacked"; exit 1; fi
+          echo "app: $APP"
+          "$APP" --check --fixtures "$(pwd -W)/fixtures/audio" --models "$(pwd -W)/fixtures/models" --json
+
+      - name: Publish the installer as a release asset
+        if: github.event_name != 'pull_request'
+        shell: bash
+        working-directory: sezgir
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="sezgir-v${VERSION}"
+          INSTALLER="$(cat installer-path.txt)"
+          NOTES_FILE="$(mktemp)"
+          cat > "$NOTES_FILE" <<NOTES
+          ## Sezgir ${VERSION} — Windows uchun oʻzbekcha ovozli yozish
+
+          **Oʻrnatish:** pastdagi \`$(basename "$INSTALLER")\` faylini yuklab oling va oching.
+          Windows *"Windows protected your PC"* desa: **More info → Run anyway** (dastur pullik
+          raqamli imzo bilan imzolanmagan, shuning uchun ogohlantiradi).
+
+          **Foydalanish:** **oʻng Ctrl** tugmasini bosib turib gapiring, qoʻyib yuboring — matn kursor
+          turgan joyga yoziladi. **Shift + oʻng Ctrl** — kirill alifbosida.
+
+          Hammasi kompyuterning oʻzida ishlaydi; aytganlaringiz internetga yuborilmaydi.
+
+          Yigʻilgan commit: ${GITHUB_SHA} (run ${GITHUB_RUN_ID}).
+          NOTES
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            gh release create "$TAG" --title "Sezgir ${VERSION} (Windows)" --notes-file "$NOTES_FILE" \
+              --target "$GITHUB_SHA" --latest=false
+          else
+            gh release edit "$TAG" --notes-file "$NOTES_FILE" --latest=false
+          fi
+          gh release upload "$TAG" "$INSTALLER" --clobber
+          ZIP=$(find release -maxdepth 1 -iname 'Sezgir-Setup-*.zip' | head -1)
+          if [ -n "$ZIP" ]; then gh release upload "$TAG" "$ZIP" --clobber; fi

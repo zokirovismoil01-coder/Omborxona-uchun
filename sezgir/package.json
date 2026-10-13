@@ -1,9 +1,9 @@
 {
   "name": "sezgir-win",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "private": true,
   "license": "MIT",
-  "description": "Sezgir for Windows — a 1:1 functional port of the macOS dictation app",
+  "description": "Sezgir — offline Uzbek dictation for Windows (Latin and Cyrillic), built on Kotiba",
   "type": "module",
   "main": "dist/src/main/index.js",
   "engines": {

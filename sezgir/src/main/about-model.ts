@@ -15,10 +15,13 @@ import type { MessageKey } from '../core/i18n/index.js';
 import { t } from '../core/i18n/index.js';
 
 /** Where the source lives. */
-export const SOURCE_URL = 'https://github.com/aziznizomofficial/kotiba';
+export const SOURCE_URL = 'https://github.com/zokirovismoil01-coder/Omborxona-uchun';
 
 /** The full notices, in the repository. */
-export const NOTICES_URL = 'https://github.com/aziznizomofficial/kotiba/blob/main/THIRD_PARTY_NOTICES.md';
+export const NOTICES_URL = 'https://github.com/zokirovismoil01-coder/Omborxona-uchun/blob/main/sezgir/THIRD_PARTY_NOTICES.md';
+
+/** The project Sezgir is built on (MIT), credited first in About. */
+export const UPSTREAM_URL = 'https://github.com/aziznizomofficial/kotiba';
 
 export interface Credit {
   readonly title: string;
@@ -97,6 +100,14 @@ export const MODEL_CREDITS: readonly Credit[] = [
 
 /** The software the app is built on, THIRD_PARTY_NOTICES.md §2–§4. */
 export const LIBRARY_CREDITS: readonly Credit[] = [
+  {
+    title: 'Kotiba — MIT',
+    detail:
+      '© 2026 Aziz Nizom. Sezgir is Kotiba’s Windows port, renamed and changed (Uzbek only by ' +
+      'default, Uzbek in Cyrillic, History encrypted at rest). Not reviewed or endorsed by its author.',
+    link: UPSTREAM_URL,
+    linkLabel: 'Source',
+  },
   {
     title: 'whisper.cpp and llama.cpp (ggml) — MIT',
     detail: '© 2023–2026 The ggml authors. whisper.cpp runs in sezgir-stt.exe; llama.cpp through node-llama-cpp.',

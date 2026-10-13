@@ -1,8 +1,16 @@
 # Third-party notices
 
-Sezgir's own source code is released under the [MIT licence](LICENSE), Copyright (c) 2026 Aziz Nizom.
-That licence covers **this repository's code only**. Everything below is somebody else's work,
-distributed under its own terms, and none of it is relicensed by being listed here.
+Sezgir is built on **Kotiba** (<https://github.com/aziznizomofficial/kotiba>), Copyright (c) 2026
+Aziz Nizom, released under the MIT licence. Sezgir is its Windows port, renamed and changed
+(Uzbek only by default, Uzbek in Cyrillic, History encrypted at rest, no cloud key, and the
+other changes listed in README.md). Kotiba's copyright and permission notice are kept in
+[LICENSE](LICENSE), and Sezgir's own changes are released under the same MIT licence. Kotiba's
+author has not reviewed or endorsed Sezgir; "Kotiba" is named here only to credit the source.
+
+That licence covers **this folder's code only**. Everything below is somebody else's work,
+distributed under its own terms, and none of it is relicensed by being listed here. The model
+and library lists below are Kotiba's, carried over unchanged in substance: where they say
+"Sezgir", read "Sezgir (and Kotiba before it)".
 
 Sezgir is an independent project. It is **not affiliated with, endorsed by, or sponsored by**
 KotibAI (kotib.ai), OpenAI, NVIDIA, moondream, FluidInference, Alibaba, Apple, Microsoft or any
@@ -14,7 +22,7 @@ licence file) on 2026-09-30; the "checked" column says which. Model cards are th
 claim: where a card and another source disagree, both are given.
 
 How to read the tables: **Shipped** means it is inside the installer or a Sezgir-built binary.
-**Downloaded** means Sezgir (or `make bootstrap`) fetches it from the source URL on first use;
+**Downloaded** means Sezgir (or `scripts/fetch-models.mjs`) fetches it from the source URL on first use;
 it is never committed to this repository. **Modified** means the bytes are not the upstream
 file.
 
@@ -36,7 +44,7 @@ Contents: 1 Speech and language models · 2 Native libraries · 3 Windows runtim
 | Post-training | moondream, `moondream/parakeet-ultra`, <https://huggingface.co/moondream/parakeet-ultra> (card: `cc-by-4.0`) |
 | macOS build (downloaded) | Core ML conversion by FluidInference, `FluidInference/parakeet-ultra-coreml`, <https://huggingface.co/FluidInference/parakeet-ultra-coreml>, pinned to revision `95eaa59a39d4394f047a4dc5cce480388a60d1b6` (card: `cc-by-4.0`) |
 | Windows build (downloaded) | ONNX int8 export by Olicorne, `Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx`, <https://huggingface.co/Olicorne/parakeet-tdt-0.6b-v3-ultra-onnx> (card: `cc-by-4.0`, base `moondream/parakeet-ultra`) |
-| Modified | Yes, by others and unchanged by Sezgir: post-training (moondream), conversion to Core ML with an int8 encoder (FluidInference), export to ONNX int8 (Olicorne). Sezgir downloads these files byte for byte and verifies their sha256 (`Scripts/Manifest.json`). |
+| Modified | Yes, by others and unchanged by Sezgir: post-training (moondream), conversion to Core ML with an int8 encoder (FluidInference), export to ONNX int8 (Olicorne). Sezgir downloads these files byte for byte and verifies their sha256 (`models-manifest.json`). |
 
 Attribution, as CC BY 4.0 section 3(a) asks: *"Parakeet Ultra" is a post-training by moondream
 of NVIDIA's parakeet-tdt-0.6b-v3, licensed under CC BY 4.0. It is used here in a Core ML build
@@ -83,7 +91,7 @@ credits them for it.
 | What | `ggml-base-q5_1.bin`, OpenAI Whisper base in ggml format, q5_1 |
 | Source | <https://huggingface.co/ggerganov/whisper.cpp> (card: `mit`); original <https://github.com/openai/whisper> (MIT, Copyright (c) 2022 OpenAI) |
 | Note | The `openai/whisper-base` card on Hugging Face lists `apache-2.0`; the upstream GitHub repository and the ggml conversion list MIT. Both are permissive; the MIT notice below is kept. |
-| Downloaded | Yes, from the URL above (sha256 in `Scripts/Manifest.json`) |
+| Downloaded | Yes, from the URL above (sha256 in `models-manifest.json`) |
 | Modified | Converted and quantised by the ggml authors, not by Sezgir |
 
 ### 1.4 Fallback engine: Whisper large-v3-turbo (MIT)
