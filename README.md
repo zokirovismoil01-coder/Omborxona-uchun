@@ -1,5 +1,9 @@
 # 🎙️ Kundalik yordamchi
 
+> **Yangi: [Sezgir](sezgir/README.md)** — Windows uchun oʻzbekcha ovozli yozish dasturi.
+> Oʻng Ctrl'ni bosib turib gapirasiz, matn istalgan dasturga yoziladi (lotin yoki kirillda,
+> Shift bilan). Internetsiz, kompyuterning oʻzida ishlaydi. Oʻrnatuvchi: **Releases → Sezgir (Windows)**.
+
 O'zbek tilida ovoz bilan boshqariladigan kundalik: **bugun nima qilish kerak** va **qancha pul sarflandi** — ikkalasini ham gapirib yozasiz.
 
 ## Nimalar qila oladi
@@ -91,7 +95,8 @@ sw.js                 — oflayn ishlash va bildirishnomalar
 manifest.webmanifest  — telefonga o'rnatish sozlamalari
 tests/                — tahlilchi testlari
 android/              — Android ilova (WebView + ovoz tanish, eslatmalar)
-.github/workflows/    — APK'ni avtomatik yig'ish
+.github/workflows/    — APK va Sezgir (Windows) o'rnatuvchisini avtomatik yig'ish
+sezgir/               — Sezgir: Windows uchun o'zbekcha ovozli yozish (alohida README)
 ```
 
 APK'ni kompyuterda yig'ish (JDK 17 va Android SDK kerak):
