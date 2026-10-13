@@ -12,7 +12,10 @@ import { SAMPLE_RATE, type AudioBuffer } from '../../src/contracts/index.js';
 import type { BundleStore } from '../../src/engines/bundle-store.js';
 import { ParakeetEngine, type ParakeetRuntime } from '../../src/engines/parakeet.js';
 
-const flush = (): Promise<void> => new Promise((resolve) => setTimeout(resolve, 0));
+// `setImmediate`, not `setTimeout(0)`: the test turns the loop over ~1,200 times, and on Windows a
+// zero-length timer waits for the next tick of a ~15.6 ms clock — 19 s of waiting for no reason.
+// The engine needs only the queue drained; no timer of its own runs in this scenario.
+const flush = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
 test('once the model lands mid-hold, the backlog drains in windows (tail ≤ 14 s at key-up)', async () => {
   let installed = false;
@@ -63,4 +66,4 @@ test('once the model lands mid-hold, the backlog drains in windows (tail ≤ 14 
     at += c.length;
   }
   await stream.finish({ samples, droppedSamples: 0 } as AudioBuffer, 'en');
-});
+}, 30_000);

@@ -17,7 +17,9 @@ import { RemoteLlamaPolisher, type ModesModel } from '../../src/polish/remote-ll
 
 const FAKE = fileURLToPath(new URL('./fake-engine-host.mjs', import.meta.url));
 const HOST = fileURLToPath(new URL('../../src/engines/engine-host.ts', import.meta.url));
-const TS = ['--import', fileURLToPath(new URL('../support/ts-resolve.mjs', import.meta.url)), '--no-warnings'];
+// A URL, not a path: `--import` takes an import specifier, and a Windows path (`D:\a\…`) reads as
+// a URL whose scheme is `d:`, so the child died at startup on Windows before the host ever ran.
+const TS = ['--import', new URL('../support/ts-resolve.mjs', import.meta.url).href, '--no-warnings'];
 
 /** A launcher over the fake host; each start takes the next behaviour from the list. */
 function fake(...behaviours: string[]) {

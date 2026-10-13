@@ -27,7 +27,9 @@ import {
 } from '../../src/engines/language-id.js';
 
 const HOST = fileURLToPath(new URL('../../src/engines/engine-host.ts', import.meta.url));
-const TS = ['--import', fileURLToPath(new URL('../support/ts-resolve.mjs', import.meta.url)), '--no-warnings'];
+// A URL, not a path: `--import` takes an import specifier, and a Windows path (`D:\a\…`) reads as
+// a URL whose scheme is `d:`, so the child died at startup on Windows before the host ever ran.
+const TS = ['--import', new URL('../support/ts-resolve.mjs', import.meta.url).href, '--no-warnings'];
 const MODEL = process.env['SEZGIR_LID_MODEL'] ?? '';
 
 const audio = (seconds: number, value = 0.1): AudioBuffer => ({
