@@ -9,5 +9,11 @@ export default defineConfig({
     // failure — the golden-parity suite is what asserts coverage, not the file count.
     passWithNoTests: true,
     reporters: ['default'],
+    // SEZGIR: the Windows CI runner is a shared two-core box with real disks and Defender
+    // scanning every temp file, and a test that fsyncs and renames 180 times or forks a
+    // process takes 2–5x as long there as on Linux. 5 s (vitest's default) failed sound
+    // tests on Windows by the clock alone; 30 s there still catches a genuine hang, and
+    // Linux keeps the default, so a slow test is still noticed where it is cheap to run.
+    testTimeout: process.platform === 'win32' ? 30_000 : 5_000,
   },
 });
