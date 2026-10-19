@@ -1,0 +1,65 @@
+name: Baliqxona oylik APK
+
+# oylik/ papkasi o'zgarganda APK yig'iladi va "Releases" bo'limiga joylanadi.
+on:
+  push:
+    branches: ['claude/gracious-hawking-wihzth', 'main']
+    paths: ['oylik/**', '.github/workflows/oylik-android.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: oylik-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Hisob-kitob testlari
+        run: node --test oylik/tests/*.test.js
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: APK yig'ish
+        working-directory: oylik/android
+        run: ./gradlew --no-daemon assembleRelease
+
+      - name: APK faylini tayyorlash
+        run: |
+          cp oylik/android/app/build/outputs/apk/release/app-release.apk baliqxona-oylik.apk
+          cp oylik/Baliqxona_oylik.xlsx Baliqxona_oylik.xlsx
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: baliqxona-oylik
+          path: |
+            baliqxona-oylik.apk
+            Baliqxona_oylik.xlsx
+
+      - name: Release'ga joylash
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: oylik-v1.0.${{ github.run_number }}
+          name: Baliqxona oylik 1.0.${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          # Boshqa ilovalarning "latest" havolasi buzilmasligi uchun
+          make_latest: false
+          files: |
+            baliqxona-oylik.apk
+            Baliqxona_oylik.xlsx
+          body: |
+            📱 **O'rnatish:** pastdagi `baliqxona-oylik.apk` faylini telefoningizga yuklab oling va oching.
+            Telefon so'rasa, «Noma'lum ilovalarni o'rnatish»ga ruxsat bering.
+            Yangi versiya eskisining ustidan o'rnatiladi, ma'lumotlaringiz saqlanib qoladi.
+
+            📊 `Baliqxona_oylik.xlsx` — formulali Excel jadval (kompyuter uchun).

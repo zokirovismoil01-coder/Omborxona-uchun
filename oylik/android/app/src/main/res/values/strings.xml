@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Baliqxona oylik</string>
+    <string name="choose_backup">Zaxira faylini tanlang</string>
+    <string name="share_title">Ulashish</string>
+    <string name="yes">Ha</string>
+    <string name="no">Yo\'q</string>
+    <string name="ok">OK</string>
+</resources>

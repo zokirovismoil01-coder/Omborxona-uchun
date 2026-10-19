@@ -1,0 +1,67 @@
+plugins {
+    id 'com.android.application'
+}
+
+// GitHub Actions'da har bir yig'ishda versiya raqami oshib boradi,
+// shuning uchun yangi APK eskisining ustidan o'rnatiladi.
+def buildNumber = (System.getenv('GITHUB_RUN_NUMBER') ?: '1').toInteger()
+
+// Veb-ilova fayllari (oylik/ papkasidan) APK ichiga assets/www sifatida ko'chiriladi.
+def webAssetsDir = file('web-assets')
+project.sync { spec ->
+    spec.from(rootProject.file('..')) {
+        include 'index.html', 'manifest.webmanifest', 'css/**', 'js/**', 'icons/**',
+                'Baliqxona_oylik.xlsx'
+    }
+    spec.into(new File(webAssetsDir, 'www'))
+}
+
+android {
+    namespace 'uz.baliqxona.oylik'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'uz.baliqxona.oylik'
+        minSdk 24
+        targetSdk 35
+        versionCode buildNumber
+        versionName "1.0.${buildNumber}"
+    }
+
+    signingConfigs {
+        release {
+            // Shaxsiy foydalanish uchun kalit. Play Market'ga chiqarishda
+            // yangi, maxfiy kalit yaratib, uni GitHub Secrets'da saqlang.
+            storeFile file('oylik-release.jks')
+            storePassword 'baliqxona2026'
+            keyAlias 'oylik'
+            keyPassword 'baliqxona2026'
+        }
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.release
+        }
+        debug {
+            signingConfig signingConfigs.release
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
+    }
+
+    sourceSets {
+        main {
+            assets.srcDir webAssetsDir
+        }
+    }
+
+    lint {
+        checkReleaseBuilds false
+        abortOnError false
+    }
+}

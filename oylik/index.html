@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1f4e78">
+  <meta name="description" content="Baliqxona ishchilarining oylik hisob-kitobi: guruhlar, davomat, avans, mukofot, jarima va to'lovlar">
+  <title>Baliqxona oylik</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <img class="logo" src="icons/icon.svg" alt="" width="34" height="34">
+      <div class="brand-text">
+        <h1 id="bizName">Baliqxona</h1>
+        <span class="brand-sub">oylik hisob-kitob</span>
+      </div>
+    </div>
+    <button id="quickOpBtn" class="top-btn" hidden>＋ Amal</button>
+  </header>
+
+  <main class="container" id="main">
+    <!-- ========== Birinchi ishga tushirish ========== -->
+    <section id="welcome" class="card welcome" hidden>
+      <h2>Xush kelibsiz!</h2>
+      <p>Bu ilova baliqxona ishchilarining oyligini hisoblaydi: guruh fondi, davomat, avans,
+        mukofot, jarima va to'lovlar. Hisob qoidasi Excel jadvalingiz bilan bir xil.</p>
+      <div class="stack">
+        <button id="startSeed" class="btn primary big">📋 Excel'dagi ma'lumotlar bilan boshlash</button>
+        <p class="muted small">4 ta guruh (Ofitsiant, Moyka, Shef, Uborsa) va 10 ta ishchi qo'shiladi.
+          Keyin ismlarni o'zgartirishingiz mumkin.</p>
+        <button id="startEmpty" class="btn big">✨ Bo'sh boshlash</button>
+        <label class="btn big file-btn">📂 Zaxiradan tiklash
+          <input id="startRestore" type="file" accept="application/json,.json" hidden>
+        </label>
+      </div>
+    </section>
+
+    <!-- ========== Oy ========== -->
+    <section id="view-month" class="view" hidden>
+      <nav class="monthbar" aria-label="Oy">
+        <button id="prevMonth" class="icon-btn" aria-label="Oldingi oy">‹</button>
+        <button id="monthLabel" class="month-label" aria-label="Oyni tanlash">
+          <span id="monthName"></span>
+          <span id="monthBadge" class="badge"></span>
+        </button>
+        <button id="nextMonth" class="icon-btn" aria-label="Keyingi oy">›</button>
+      </nav>
+
+      <div id="noMonth" class="card empty-card" hidden>
+        <p>Hali birorta oy hisobi ochilmagan.</p>
+        <button id="openFirstMonth" class="btn primary">Oy hisobini ochish</button>
+      </div>
+
+      <div id="monthBody" hidden>
+        <section class="summary" aria-label="Oy natijalari">
+          <div class="stat">
+            <span class="stat-label">Jami hisoblangan</span>
+            <span class="stat-value" id="stTotal"></span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Berilgan</span>
+            <span class="stat-value" id="stGiven"></span>
+            <span class="stat-sub" id="stGivenSub"></span>
+          </div>
+          <div class="stat accent">
+            <span class="stat-label">To'lanishi kerak</span>
+            <span class="stat-value" id="stDue"></span>
+            <span class="stat-sub" id="stDueSub"></span>
+          </div>
+          <div class="stat">
+            <span class="stat-label">Tejaldi</span>
+            <span class="stat-value" id="stSaved"></span>
+            <span class="stat-sub" id="stFund"></span>
+          </div>
+        </section>
+
+        <div id="lockNote" class="note lock" hidden>🔒 Bu oy yopilgan: raqamlar muhrlangan. O'zgartirish uchun
+          pastdagi «Qayta ochish» tugmasini bosing.</div>
+        <ul id="warnings" class="warnings"></ul>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Guruhlar</h2>
+            <button id="toGroups" class="link-btn">Sozlash ›</button>
+          </div>
+          <div id="groupSummary"></div>
+        </section>
+
+        <section class="card">
+          <div class="card-head">
+            <h2>Ishchilar <span id="memberCount" class="muted"></span></h2>
+            <button id="addMemberBtn" class="link-btn">＋ Qo'shish</button>
+          </div>
+          <div id="memberList"></div>
+          <p id="memberEmpty" class="empty" hidden>Bu oyda ishchi yo'q. «＋ Qo'shish» ni bosing.</p>
+        </section>
+
+        <section class="card">
+          <h2>Amallar</h2>
+          <ul id="opList" class="list ops"></ul>
+          <p id="opEmpty" class="empty" hidden>Hali avans, mukofot, jarima yoki to'lov yozilmagan.</p>
+        </section>
+
+        <section class="card actions-card">
+          <div class="actions">
+            <button id="addOpBtn" class="btn primary">＋ Amal yozish</button>
+            <button id="payAllBtn" class="btn">💵 Hammaga to'lash</button>
+            <button id="exportMonthBtn" class="btn">📄 Excel'ga yuklash</button>
+            <button id="printBtn" class="btn">🖨 Qaydnoma (chop etish)</button>
+            <button id="closeMonthBtn" class="btn"></button>
+            <button id="newMonthBtn" class="btn">🗓 Yangi oy ochish</button>
+            <button id="deleteMonthBtn" class="btn danger-text">🗑 Oyni o'chirish</button>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <!-- ========== Ishchilar ========== -->
+    <section id="view-staff" class="view" hidden>
+      <div class="view-head">
+        <h2>Ishchilar</h2>
+        <button id="addEmployeeBtn" class="btn primary">＋ Ishchi</button>
+      </div>
+      <input id="staffSearch" class="search" type="search" placeholder="Ism bo'yicha qidirish" aria-label="Qidirish">
+      <div id="staffList"></div>
+      <p id="staffEmpty" class="empty" hidden>Ishchilar ro'yxati bo'sh.</p>
+    </section>
+
+    <!-- ========== Guruhlar ========== -->
+    <section id="view-groups" class="view" hidden>
+      <div class="view-head">
+        <h2>Guruhlar</h2>
+        <button id="addGroupBtn" class="btn primary">＋ Guruh</button>
+      </div>
+      <p class="muted small">Fond = asosiy oylik × me'yoriy soni. Odam me'yordan ko'p bo'lsa, fond hamma
+        o'rtasida teng bo'linadi; kam bo'lsa, har kim asosiy oylikni oladi va qolgani tejaladi.
+        O'zgarishlar yopilmagan oylarga ham ta'sir qiladi, yopilgan oylar o'zgarmaydi.</p>
+      <div id="groupList"></div>
+      <p id="groupEmpty" class="empty" hidden>Guruhlar yo'q. Avval guruh qo'shing.</p>
+    </section>
+
+    <!-- ========== Hisobot ========== -->
+    <section id="view-report" class="view" hidden>
+      <div id="backupNag" class="note warn" hidden></div>
+
+      <section class="card">
+        <div class="report-head">
+          <button id="prevYear" class="icon-btn" aria-label="Oldingi yil">‹</button>
+          <h2 id="yearLabel"></h2>
+          <button id="nextYear" class="icon-btn" aria-label="Keyingi yil">›</button>
+        </div>
+        <div class="table-wrap">
+          <table class="table" id="yearTable"></table>
+        </div>
+        <p class="muted small">«Hisoblangan» — shu oyning o'zida hisoblangan oylik (mukofot va jarima bilan).
+          «Qoldiq» keyingi oyga o'tadi, shuning uchun u yig'ilmaydi.</p>
+        <h3 class="subhead">Ishchilar bo'yicha (yil)</h3>
+        <div class="table-wrap">
+          <table class="table" id="yearPeople"></table>
+        </div>
+        <button id="exportYearBtn" class="btn wide">📄 Yillik hisobotni Excel'ga yuklash</button>
+      </section>
+
+      <section class="card">
+        <h2>Ma'lumotlar</h2>
+        <div class="actions">
+          <button id="backupBtn" class="btn">💾 Zaxira nusxa olish</button>
+          <label class="btn file-btn">📂 Zaxiradan tiklash
+            <input id="restoreInput" type="file" accept="application/json,.json" hidden>
+          </label>
+          <button id="templateBtn" class="btn">📋 Formulali Excel jadval</button>
+        </div>
+        <p class="muted small">Ma'lumotlar faqat shu telefonda saqlanadi va hech qayerga yuborilmaydi.
+          Telefon almashtirsangiz yoki ilovani o'chirsangiz, zaxira nusxadan tiklaysiz.</p>
+      </section>
+
+      <section class="card">
+        <h2>Sozlamalar</h2>
+        <form id="settingsForm" class="form">
+          <label>Korxona nomi
+            <input id="setBusiness" type="text" maxlength="60" required>
+          </label>
+          <label>Oylikni yaxlitlash
+            <select id="setStep">
+              <option value="1">Yaxlitlanmaydi</option>
+              <option value="100">100 so'mgacha</option>
+              <option value="500">500 so'mgacha</option>
+              <option value="1000">1 000 so'mgacha</option>
+              <option value="5000">5 000 so'mgacha</option>
+              <option value="10000">10 000 so'mgacha</option>
+            </select>
+          </label>
+          <p class="muted small">Oylik har doim pastga yaxlitlanadi (asl jadvalda 1 000 so'mgacha).
+            Yopilgan oylar o'z yaxlitlashini saqlaydi.</p>
+          <button class="btn primary">Saqlash</button>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Ilova haqida</h2>
+        <p class="muted small" id="aboutText"></p>
+        <button id="resetBtn" class="btn danger-text">⚠ Hamma ma'lumotni o'chirish</button>
+      </section>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar" hidden>
+    <button class="tab active" data-view="month"><span class="tab-ico">🗓</span><span>Oy</span></button>
+    <button class="tab" data-view="staff"><span class="tab-ico">👥</span><span>Ishchilar</span></button>
+    <button class="tab" data-view="groups"><span class="tab-ico">🗂</span><span>Guruhlar</span></button>
+    <button class="tab" data-view="report"><span class="tab-ico">📊</span><span>Hisobot</span></button>
+  </nav>
+
+  <dialog id="dlg" aria-labelledby="dlgTitle">
+    <div class="dlg-head">
+      <h2 id="dlgTitle"></h2>
+      <button type="button" class="icon-btn" id="dlgClose" aria-label="Yopish">✕</button>
+    </div>
+    <div id="dlgBody"></div>
+  </dialog>
+
+  <div id="toast" class="toast" role="status" hidden>
+    <span id="toastText"></span>
+    <button id="toastAction" class="toast-action" hidden>Bekor qilish</button>
+  </div>
+
+  <div id="printArea" aria-hidden="true"></div>
+
+  <script src="js/calc.js"></script>
+  <script src="js/xlsx.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

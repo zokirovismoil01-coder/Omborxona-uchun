@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- icons/icon.svg dagi baliq va tanga (512 birlik) 108dp maydonning xavfsiz markaziga joylangan -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <group
+        android:scaleX="0.142"
+        android:scaleY="0.142"
+        android:translateX="16.8"
+        android:translateY="11.97">
+        <path android:fillColor="#FFFFFF"
+            android:pathData="M84,244c38,-62 104,-102 176,-102 58,0 104,28 136,64l44,-42v164l-44,-42c-32,36 -78,64 -136,64 -72,0 -138,-40 -176,-106z" />
+        <path android:strokeColor="#1F4E78" android:strokeAlpha="0.35" android:strokeWidth="12"
+            android:strokeLineCap="round"
+            android:pathData="M232,160c18,26 26,54 26,84s-8,58 -26,84" />
+        <path android:fillColor="#1F4E78"
+            android:pathData="M153,226a17,17 0 1,0 34,0a17,17 0 1,0 -34,0z" />
+        <path android:fillColor="#F2B632" android:strokeColor="#1F4E78" android:strokeWidth="16"
+            android:pathData="M284,372a78,78 0 1,0 156,0a78,78 0 1,0 -156,0z" />
+        <path android:strokeColor="#B9831A" android:strokeWidth="10"
+            android:pathData="M314,372a48,48 0 1,0 96,0a48,48 0 1,0 -96,0z" />
+        <path android:strokeColor="#7A5410" android:strokeWidth="10" android:strokeLineCap="round"
+            android:strokeLineJoin="round"
+            android:pathData="M362,336v72M382,352h-30a12,12 0 0,0 0,24h20a12,12 0 0,1 0,24h-30" />
+    </group>
+</vector>

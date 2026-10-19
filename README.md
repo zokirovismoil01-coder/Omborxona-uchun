@@ -1,5 +1,7 @@
 # 🎙️ Kundalik yordamchi
 
+> Shu repozitoriyada yana bir ilova bor: **🐟 Baliqxona oylik** — ishchilar oyligini hisoblash (APK va Excel). Batafsil: [oylik/README.md](oylik/README.md).
+
 O'zbek tilida ovoz bilan boshqariladigan kundalik: **bugun nima qilish kerak** va **qancha pul sarflandi** — ikkalasini ham gapirib yozasiz.
 
 ## Nimalar qila oladi

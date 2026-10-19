@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 6–11: ilova fayllari (state.json) va WebView xotirasi zaxiralanadi -->
+<full-backup-content>
+    <include domain="file" path="." />
+    <include domain="root" path="app_webview/" />
+</full-backup-content>
