@@ -1,0 +1,375 @@
+{
+ "_voice": "Madina",
+ "bob-aloqa": {
+  "hash": "b54de48c",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-batareya": {
+  "hash": "1571658a",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-esc": {
+  "hash": "69042afe",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-fizika": {
+  "hash": "085d0458",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-kirish": {
+  "hash": "3b8a3b2b",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-kontroller": {
+  "hash": "bf964b19",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-loyiha": {
+  "hash": "d8d8591e",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-motor": {
+  "hash": "36bc4568",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-pid": {
+  "hash": "b663ec16",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-rama": {
+  "hash": "66a47659",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-rejimlar": {
+  "hash": "16885752",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-sensorlar": {
+  "hash": "b37839c3",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-vint": {
+  "hash": "abad76e0",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "bob-xavfsizlik": {
+  "hash": "4704ac61",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-back": {
+  "hash": "b6396e4b",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-down": {
+  "hash": "9cf95778",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-fail": {
+  "hash": "8fd5f35a",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-forward": {
+  "hash": "942aac0f",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-hover": {
+  "hash": "8920b833",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-left": {
+  "hash": "f4ae391f",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-right": {
+  "hash": "17e8d1fb",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-up": {
+  "hash": "bd9fc74a",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-yawL": {
+  "hash": "ecd1a18c",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "harakat-yawR": {
+  "hash": "ade8f4ad",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "lab-good": {
+  "hash": "8abbc495",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "lab-highd": {
+  "hash": "712a5a84",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "lab-highp": {
+  "hash": "d148c3d4",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "lab-noi": {
+  "hash": "939fe896",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "lab-ponly": {
+  "hash": "7746e416",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "lab-weak": {
+  "hash": "6630d377",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-baro": {
+  "hash": "f956b563",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-batareya": {
+  "hash": "f6511cd5",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-esc": {
+  "hash": "58cc5e16",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-fc": {
+  "hash": "db84add1",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-gps": {
+  "hash": "48801f91",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-imu": {
+  "hash": "1713f7bb",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-kamera": {
+  "hash": "4bb3dfc9",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-motor": {
+  "hash": "455ffdfb",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-oyoq": {
+  "hash": "1af611b7",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-pdb": {
+  "hash": "7ee78efe",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-rama": {
+  "hash": "45ef7836",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-rx": {
+  "hash": "ebc9f315",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-telem": {
+  "hash": "1b6c532a",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-vint": {
+  "hash": "65d72b49",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "qism-yuk": {
+  "hash": "8cb4d514",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-1": {
+  "hash": "155c5afd",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-10": {
+  "hash": "e7473662",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-11": {
+  "hash": "aab180cd",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-12": {
+  "hash": "c350cf30",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-13": {
+  "hash": "f926f038",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-14": {
+  "hash": "5f622aa1",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-15": {
+  "hash": "f47db08c",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-16": {
+  "hash": "3ea0503e",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-17": {
+  "hash": "887de7f3",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-2": {
+  "hash": "3fe3cb27",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-3": {
+  "hash": "10e70fd7",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-4": {
+  "hash": "9e0a4cdd",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-5": {
+  "hash": "a0399020",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-6": {
+  "hash": "dabe75fb",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-7": {
+  "hash": "8bece666",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-8": {
+  "hash": "b29f571d",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ },
+ "sayohat-9": {
+  "hash": "a0b2c14f",
+  "voice": "uz-UZ-MadinaNeural",
+  "rate": "-5%",
+  "dur": null
+ }
+}
