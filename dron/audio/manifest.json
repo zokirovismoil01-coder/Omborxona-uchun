@@ -4,372 +4,372 @@
   "hash": "b54de48c",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 175.5
  },
  "bob-batareya": {
   "hash": "1571658a",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 282.6
  },
  "bob-esc": {
   "hash": "69042afe",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 169.0
  },
  "bob-fizika": {
   "hash": "085d0458",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 268.5
  },
  "bob-kirish": {
   "hash": "3b8a3b2b",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 196.3
  },
  "bob-kontroller": {
   "hash": "bf964b19",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 209.1
  },
  "bob-loyiha": {
   "hash": "d8d8591e",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 228.8
  },
  "bob-motor": {
   "hash": "36bc4568",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 238.6
  },
  "bob-pid": {
   "hash": "b663ec16",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 183.9
  },
  "bob-rama": {
   "hash": "66a47659",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 172.7
  },
  "bob-rejimlar": {
   "hash": "16885752",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 179.4
  },
  "bob-sensorlar": {
   "hash": "b37839c3",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 248.2
  },
  "bob-vint": {
   "hash": "abad76e0",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 190.6
  },
  "bob-xavfsizlik": {
   "hash": "4704ac61",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 173.3
  },
  "harakat-back": {
   "hash": "b6396e4b",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 15.4
  },
  "harakat-down": {
   "hash": "9cf95778",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 15.5
  },
  "harakat-fail": {
   "hash": "8fd5f35a",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 30.9
  },
  "harakat-forward": {
   "hash": "942aac0f",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 25.0
  },
  "harakat-hover": {
   "hash": "8920b833",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 18.3
  },
  "harakat-left": {
   "hash": "f4ae391f",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 9.0
  },
  "harakat-right": {
   "hash": "17e8d1fb",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 15.0
  },
  "harakat-up": {
   "hash": "bd9fc74a",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 17.8
  },
  "harakat-yawL": {
   "hash": "ecd1a18c",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 19.6
  },
  "harakat-yawR": {
   "hash": "ade8f4ad",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 25.5
  },
  "lab-good": {
   "hash": "8abbc495",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 16.8
  },
  "lab-highd": {
   "hash": "712a5a84",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 19.9
  },
  "lab-highp": {
   "hash": "d148c3d4",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 21.3
  },
  "lab-noi": {
   "hash": "939fe896",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 18.5
  },
  "lab-ponly": {
   "hash": "7746e416",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 18.6
  },
  "lab-weak": {
   "hash": "6630d377",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 21.3
  },
  "qism-baro": {
   "hash": "f956b563",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 76.7
  },
  "qism-batareya": {
   "hash": "f6511cd5",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 97.8
  },
  "qism-esc": {
   "hash": "58cc5e16",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 96.2
  },
  "qism-fc": {
   "hash": "db84add1",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 103.3
  },
  "qism-gps": {
   "hash": "48801f91",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 107.4
  },
  "qism-imu": {
   "hash": "1713f7bb",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 97.7
  },
  "qism-kamera": {
   "hash": "4bb3dfc9",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 67.1
  },
  "qism-motor": {
   "hash": "455ffdfb",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 102.8
  },
  "qism-oyoq": {
   "hash": "1af611b7",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 60.6
  },
  "qism-pdb": {
   "hash": "7ee78efe",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 82.1
  },
  "qism-rama": {
   "hash": "45ef7836",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 86.5
  },
  "qism-rx": {
   "hash": "ebc9f315",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 85.3
  },
  "qism-telem": {
   "hash": "1b6c532a",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 74.8
  },
  "qism-vint": {
   "hash": "65d72b49",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 97.5
  },
  "qism-yuk": {
   "hash": "8cb4d514",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 76.3
  },
  "sayohat-1": {
   "hash": "155c5afd",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 35.7
  },
  "sayohat-10": {
   "hash": "e7473662",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 28.4
  },
  "sayohat-11": {
   "hash": "aab180cd",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 26.4
  },
  "sayohat-12": {
   "hash": "c350cf30",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 17.6
  },
  "sayohat-13": {
   "hash": "f926f038",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 27.9
  },
  "sayohat-14": {
   "hash": "5f622aa1",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 23.8
  },
  "sayohat-15": {
   "hash": "f47db08c",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 25.7
  },
  "sayohat-16": {
   "hash": "3ea0503e",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 22.2
  },
  "sayohat-17": {
   "hash": "887de7f3",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 23.7
  },
  "sayohat-2": {
   "hash": "3fe3cb27",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 29.9
  },
  "sayohat-3": {
   "hash": "10e70fd7",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 25.8
  },
  "sayohat-4": {
   "hash": "9e0a4cdd",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 30.3
  },
  "sayohat-5": {
   "hash": "a0399020",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 36.5
  },
  "sayohat-6": {
   "hash": "dabe75fb",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 23.0
  },
  "sayohat-7": {
   "hash": "8bece666",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 26.9
  },
  "sayohat-8": {
   "hash": "b29f571d",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 22.0
  },
  "sayohat-9": {
   "hash": "a0b2c14f",
   "voice": "uz-UZ-MadinaNeural",
   "rate": "-5%",
-  "dur": null
+  "dur": 21.6
  }
 }

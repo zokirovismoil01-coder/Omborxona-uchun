@@ -32,17 +32,8 @@ def duration(path):
         ).stdout.strip()
         return round(float(out), 1)
     except Exception:
-        return None
-
-
-def compress(src, dst):
-    # Nutq uchun 32 kbit/s mono yetarli: fayllar 1,5 baravar kichrayadi
-    try:
-        subprocess.run(['ffmpeg', '-y', '-v', 'error', '-f', 'mp3', '-i', src, '-ac', '1', '-ar', '24000', '-b:a', '32k', '-f', 'mp3', dst],
-                       check=True)
-        os.remove(src)
-    except Exception:
-        os.replace(src, dst)
+        # ffprobe bo'lmasa: edge-tts 48 kbit/s MP3 beradi
+        return round(os.path.getsize(path) * 8 / 48000, 1)
 
 
 async def make(item):
@@ -53,7 +44,7 @@ async def make(item):
             await edge_tts.Communicate(item['text'], VOICE, rate=RATE).save(tmp)
             if os.path.getsize(tmp) < 1000:
                 raise RuntimeError('fayl juda kichik')
-            compress(tmp, path)
+            os.replace(tmp, path)
             return duration(path)
         except Exception as e:  # tarmoq uzilishi va hokazo
             print(f"  {item['id']}: urinish {attempt + 1} muvaffaqiyatsiz — {e}", file=sys.stderr)

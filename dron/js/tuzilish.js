@@ -341,7 +341,7 @@
     $('chapter').innerHTML = `
       <p class="ch-meta">${i + 1}-bob · ${c.min} daqiqa o'qish</p>
       <h2 class="ch-h">${esc(c.title)}</h2>
-      <div class="ch-listen">${listenBtn('bob-' + c.id, 'Bobni tinglash')}${SPEECH['bob-' + c.id] ? `<span class="field-note">≈ ${Math.max(1, Math.round(SPEECH['bob-' + c.id].text.length / 900))} daqiqa</span>` : ''}</div>
+      <div class="ch-listen">${listenBtn('bob-' + c.id, 'Bobni tinglash')}${SPEECH['bob-' + c.id] ? `<span class="field-note">≈ ${Math.max(1, Math.round(SPEECH['bob-' + c.id].text.length / 760))} daqiqa</span>` : ''}</div>
       ${c.parts.length ? `<div class="ch-parts"><span>3D modelda ko'rish:</span>${c.parts.map((p) => `<button type="button" class="chip-btn" data-show="${p}">${esc(PART[p].name)}</button>`).join('')}</div>` : ''}
       <div class="ch-body">${c.html}</div>
       <section class="ch-summary"><h3>Esda tuting</h3><ul>${c.summary.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></section>
