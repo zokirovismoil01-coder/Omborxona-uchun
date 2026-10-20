@@ -1,0 +1,61 @@
+name: O'zbekcha ovoz
+
+# Darslik, sayohat va qismlar matni o'zgarganda o'zbekcha ovozli fayllarni yaratadi
+# va ularni dron/audio papkasiga saqlaydi. Qo'lda ham ishga tushirish mumkin (Run workflow).
+on:
+  push:
+    paths:
+      - 'dron/js/tuzilish-data.js'
+      - 'dron/js/darslik.js'
+      - 'dron/js/pidlab.js'
+      - 'dron/js/ovoz.js'
+      - 'tools/ovoz/**'
+      - '.github/workflows/ovoz.yml'
+  workflow_dispatch:
+    inputs:
+      ovoz:
+        description: 'Ovoz: uz-UZ-MadinaNeural (ayol) yoki uz-UZ-SardorNeural (erkak)'
+        default: 'uz-UZ-MadinaNeural'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ovoz-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  ovoz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Matnlarni tayyorlash
+        run: node tools/ovoz/matn.js
+
+      - name: Ovoz yaratish
+        env:
+          OVOZ: ${{ github.event.inputs.ovoz || 'uz-UZ-MadinaNeural' }}
+        run: |
+          pip install 'edge-tts>=7.0,<8'
+          python tools/ovoz/yarat.py
+
+      - name: Fayllarni saqlash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dron/audio
+          if git diff --cached --quiet; then
+            echo "Yangi ovoz yo'q"
+            exit 0
+          fi
+          git commit -m "O'zbekcha ovozli fayllar yangilandi"
+          for i in 1 2 3; do
+            git pull --rebase origin "${GITHUB_REF_NAME}" && git push origin "HEAD:${GITHUB_REF_NAME}" && exit 0
+            sleep 5
+          done
+          exit 1

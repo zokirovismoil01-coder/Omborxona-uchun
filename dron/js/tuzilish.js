@@ -32,6 +32,10 @@
 
   const PART = Object.fromEntries(P.PARTS.map((p) => [p.id, p]));
   const CHAPTER = Object.fromEntries(B.CHAPTERS.map((c) => [c.id, c]));
+  const O = window.DronOvoz;
+  const SPEECH = Object.fromEntries(O.items(P, B, L).map((it) => [it.id, it]));
+  const SPK = '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"></path><path class="ico-l" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"></path></svg>';
+  const listenBtn = (id, label) => `<button type="button" class="listen" data-listen="${id}">${SPK}<span>${label || 'Tinglash'}</span></button>`;
   const PART_VIEW = {
     rama: 'top', motor: 'motor', vint: 'iso', esc: 'under', pdb: 'iso', fc: 'fc', imu: 'fc', baro: 'fc',
     gps: 'iso', rx: 'rear', telem: 'rear', batareya: 'under', kamera: 'under', yuk: 'under', oyoq: 'under',
@@ -85,6 +89,7 @@
 
   document.addEventListener('dron:tab', (e) => {
     visible = e.detail === 'tuzilish';
+    if (!visible) stopTourVoice();
     if (visible) setSub(sub);
     else syncRunning();
   });
@@ -120,6 +125,7 @@
   }
 
   function setMode(m) {
+    if (m !== 'tour') stopTourVoice();
     mode = m;
     document.querySelectorAll('#modeSeg button').forEach((b) => b.setAttribute('aria-checked', String(b.dataset.mode === m)));
     $('paneParts').hidden = m !== 'parts';
@@ -204,7 +210,8 @@
       <dl class="pi-specs">${p.specs.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`).join('')}</dl>
       <h4>Ishdan chiqsa</h4><p>${esc(p.fail)}</p>
       <p class="pi-tip"><b>Maslahat.</b> ${esc(p.tip)}</p>
-      ${ch ? `<button type="button" class="btn" data-chapter="${ch.id}">Darslikda batafsil: ${esc(ch.title)}</button>` : ''}`;
+      <div class="pi-actions">${listenBtn('qism-' + p.id)}
+      ${ch ? `<button type="button" class="btn" data-chapter="${ch.id}">Darslikda batafsil: ${esc(ch.title)}</button>` : ''}</div>`;
   }
 
   $('partInfo').addEventListener('click', (e) => {
@@ -229,7 +236,7 @@
     document.querySelectorAll('.stick button, #mvFail, #mvHover').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.mv === maneuver)));
     const m = P.MANEUVERS[maneuver];
     $('flightInfo').innerHTML = `<h3>${esc(m.name)}</h3>
-      <p class="mv-stick">${esc(m.stick)}</p><p>${esc(m.text)}</p>
+      <p class="mv-stick">${esc(m.stick)}</p><p>${esc(m.text)}</p>${listenBtn('harakat-' + maneuver)}
       ${auto ? '<p class="field-note">Dron qulab tushdi — model qayta muallaq holatga qaytarildi.</p>' : ''}`;
   }
 
@@ -295,6 +302,7 @@
     viewer.setPath(s.path || null);
     viewer.setFlow(!!s.maneuver);
     viewer.setView(s.view || 'iso');
+    narrateStep();
   }
 
   $('tourPrev').addEventListener('click', () => showTourStep(tourStep - 1));
@@ -333,6 +341,7 @@
     $('chapter').innerHTML = `
       <p class="ch-meta">${i + 1}-bob · ${c.min} daqiqa o'qish</p>
       <h2 class="ch-h">${esc(c.title)}</h2>
+      <div class="ch-listen">${listenBtn('bob-' + c.id, 'Bobni tinglash')}${SPEECH['bob-' + c.id] ? `<span class="field-note">≈ ${Math.max(1, Math.round(SPEECH['bob-' + c.id].text.length / 900))} daqiqa</span>` : ''}</div>
       ${c.parts.length ? `<div class="ch-parts"><span>3D modelda ko'rish:</span>${c.parts.map((p) => `<button type="button" class="chip-btn" data-show="${p}">${esc(PART[p].name)}</button>`).join('')}</div>` : ''}
       <div class="ch-body">${c.html}</div>
       <section class="ch-summary"><h3>Esda tuting</h3><ul>${c.summary.map((s) => `<li>${esc(s)}</li>`).join('')}</ul></section>
@@ -453,6 +462,7 @@
       targetDeg: +$('labTarget').value,
     });
     $('labText').textContent = pr.text;
+    document.querySelector('[data-listen^="lab"]').dataset.listen = 'lab-' + id;
     syncLabOutputs();
   }
 
@@ -660,6 +670,98 @@
   // =====================================================================
   // Ishga tushirish
   // =====================================================================
+
+  // =====================================================================
+  // OVOZLI O'QISH
+  // =====================================================================
+
+  const player = new O.Player('audio/');
+  const RATES = [1, 1.25, 1.5, 0.85];
+  let tourVoiceTimer = null;
+
+  function playItem(id, onEnd) {
+    const item = SPEECH[id];
+    if (!item) return null;
+    const src = player.play(item, onEnd);
+    if (!src) showNoVoice();
+    return src;
+  }
+
+  function showNoVoice() {
+    $('player').hidden = false;
+    $('player').classList.add('pl-empty');
+    $('plTitle').textContent = player.filesCount
+      ? "Bu matn uchun ovozli fayl hali tayyor emas."
+      : player.status().text;
+    $('plProg').style.width = '0%';
+  }
+
+  player.on((st) => {
+    const bar = $('player');
+    if (!st.item) { bar.hidden = true; return; }
+    bar.hidden = false;
+    bar.classList.remove('pl-empty');
+    bar.classList.toggle('pl-on', st.playing);
+    $('plTitle').textContent = st.item.title;
+    $('plProg').style.width = (st.progress * 100).toFixed(1) + '%';
+    $('plRate').textContent = fmt(st.rate, st.rate % 1 ? 2 : 0).replace(/0$/, '') + '×';
+    $('plToggle').setAttribute('aria-label', st.playing ? 'Pauza' : 'Davom etish');
+    document.querySelectorAll('[data-listen]').forEach((b) => b.classList.toggle('on', b.dataset.listen === st.item.id && st.playing));
+    renderVoiceNote();
+  });
+
+  $('plToggle').addEventListener('click', () => player.toggle());
+  $('plClose').addEventListener('click', () => {
+    player.stop();
+    $('player').hidden = true;
+    $('tzVoice').checked = false;
+  });
+  $('plRate').addEventListener('click', () => {
+    const i = RATES.indexOf(player.rate);
+    player.setRate(RATES[(i + 1) % RATES.length]);
+  });
+
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-listen]');
+    if (!b) return;
+    const id = b.dataset.listen;
+    if (player.item && player.item.id === id && player.mode) { player.toggle(); return; }
+    playItem(id);
+  });
+
+  function renderVoiceNote() {
+    $('voiceNote').textContent = player.status().text;
+  }
+
+  function narrateStep() {
+    clearTimeout(tourVoiceTimer);
+    if (!$('tzVoice').checked || mode !== 'tour') return;
+    const step = tourStep;
+    playItem('sayohat-' + (step + 1), () => {
+      if (!$('tzAuto').checked || mode !== 'tour' || step !== tourStep) return;
+      if (P.TOUR[step].end) return;
+      tourVoiceTimer = setTimeout(() => {
+        if (mode === 'tour' && step === tourStep && $('tzVoice').checked) showTourStep(step + 1);
+      }, 1200);
+    });
+  }
+
+  function stopTourVoice() {
+    clearTimeout(tourVoiceTimer);
+    if (player.item && /^sayohat-/.test(player.item.id)) player.stop();
+  }
+
+  $('tzVoice').addEventListener('change', (e) => {
+    if (e.target.checked) narrateStep();
+    else stopTourVoice();
+  });
+  $('tourPlay').addEventListener('click', () => {
+    $('tzVoice').checked = true;
+    $('tzAuto').checked = true;
+    showTourStep(0);
+  });
+
+  player.load().then(renderVoiceNote);
 
   renderPartList();
   renderPartInfo();

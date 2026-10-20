@@ -1,5 +1,5 @@
 // Oflayn ishlash uchun keshlash. Fayllar o'zgarsa, versiyani oshiring.
-const CACHE = 'dron-lab-v2';
+const CACHE = 'dron-lab-v3';
 const FILES = [
   './',
   'index.html',
@@ -11,6 +11,7 @@ const FILES = [
   'js/darslik.js',
   'js/pidlab.js',
   'js/drone3d.js',
+  'js/ovoz.js',
   'js/tuzilish.js',
   'js/app.js',
   'vendor/three.min.js',

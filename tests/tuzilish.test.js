@@ -77,3 +77,18 @@ test("PID: I bo'lmasa doimiy shamolda og'ish qoladi, I uni yo'qotadi", () => {
   assert.ok(Math.abs(noI.angle / L.DEG) > 2 && Math.abs(noI.angle / L.DEG) < 4);
   assert.ok(Math.abs(withI.angle / L.DEG) < 0.5);
 });
+
+test("ovoz uchun matn: birliklar, oraliqlar va o'zbekcha harflar", () => {
+  const O = require('../dron/js/ovoz.js');
+  const n = (t) => O.normalize(O.htmlToText(t));
+  assert.equal(n('massasi 4–5 kg'), 'massasi 4 dan 5 gacha kilogramm');
+  assert.equal(n('FIK (80–90%)'), 'ef-i-ka (80 dan 90 gacha foiz)');
+  assert.equal(n("oxirgi 20% ini"), 'oxirgi 20 foizini');
+  assert.equal(n('6S 10 000 mAh'), '6 es 10000 milliamper-soat');
+  assert.equal(n("o'q va g'altak"), 'oʻq va gʻaltak');
+  assert.ok(!/<|>/.test(n('<p>a</p><table><tr><th>X</th><th>Y</th></tr><tr><td>1</td><td>2</td></tr></table>')));
+  const items = O.items(P, B, L);
+  assert.equal(new Set(items.map((i) => i.id)).size, items.length);
+  assert.equal(items.filter((i) => i.id.startsWith('sayohat-')).length, P.TOUR.length);
+  items.forEach((i) => assert.ok(i.text.length > 20 && /^[0-9a-f]{8}$/.test(i.hash), i.id));
+});

@@ -23,6 +23,29 @@ Haqiqiy dron kerak emas: hammasi brauzerda, telefon yoki kompyuterda ishlaydi.
   o'zingiz burasiz, shamol zarbasi, doimiy shamol, zaif motor va shovqinli sensorni yoqasiz va
   grafikda dron qanday javob berishini ko'rasiz.
 
+### Ovozli o'qish (o'zbekcha)
+Sayohat qadamlari, qismlar, parvoz harakatlari, darslik boblari va laboratoriya holatlarini
+o'zbekcha ovoz bilan tinglash mumkin. «Ovozli sayohatni boshlash» tugmasi sayohatni videodek
+o'zi o'qib, qadamma-qadam o'tkazadi. Tezlikni 0,85× dan 1,5× gacha o'zgartirsa bo'ladi.
+
+- Ovozli fayllar (`dron/audio/*.mp3`) GitHub Actions'da avtomatik yaratiladi
+  (`.github/workflows/ovoz.yml`): matn o'zgarsa, faqat o'sha fayl qayta yoziladi.
+  Ovoz — Microsoft Edge'ning bepul o'qish xizmatidagi «Madina» (uz-UZ-MadinaNeural).
+  Bu rasmiy pullik API emas; tijorat loyihasida Azure Speech (oyiga 0,5 mln belgigacha bepul)
+  yoki boshqa litsenziyali xizmatga o'tish kerak.
+- Erkak ovozi kerak bo'lsa: GitHub → Actions → «O'zbekcha ovoz» → Run workflow →
+  `uz-UZ-SardorNeural`.
+- Fayllar hali tayyor bo'lmasa, ilova qurilmadagi o'zbekcha ovozdan foydalanadi
+  (masalan, Microsoft Edge brauzerida Madina va Sardor bor).
+
+Kompyuterda o'zingiz yaratish (internet kerak):
+
+```bash
+node tools/ovoz/matn.js
+pip install edge-tts
+python tools/ovoz/yarat.py
+```
+
 ### Simulyator
 Shahar xaritasida ombor, dronlar va buyurtmalar. Buyurtmalar tasodifiy tushadi, dispetcher
 ularni dronlarga taqsimlaydi, dronlar taqiqlangan zonalarni aylanib uchadi, batareya sarflaydi
@@ -91,6 +114,9 @@ dron/js/darslik.js     — darslikning 14 bobi va sxemalari
 dron/js/pidlab.js      — parvoz laboratoriyasi (PID) hisob-kitobi
 dron/js/drone3d.js     — 3D dron modeli (three.js)
 dron/js/tuzilish.js    — «Tuzilishi» bo'limi interfeysi
+dron/js/ovoz.js        — ovoz uchun matn tayyorlash va pleyer
+dron/audio/            — o'zbekcha ovozli fayllar (GitHub Actions yaratadi)
+tools/ovoz/            — ovozli fayllarni yaratish skriptlari
 dron/js/app.js         — interfeys: xarita, tajriba, hisoblash, darslar
 dron/vendor/           — three.js r128 (MIT litsenziyasi), internetsiz ishlashi uchun
 dron/sw.js             — oflayn ishlash

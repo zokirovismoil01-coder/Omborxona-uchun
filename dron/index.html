@@ -113,6 +113,12 @@
               <button type="button" class="btn primary" id="tourNext">Keyingisi</button>
             </div>
             <button type="button" class="link-btn" id="tourRestart">Boshidan boshlash</button>
+            <div class="voice-box">
+              <button type="button" class="btn primary" id="tourPlay"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"></path><path class="ico-l" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"></path></svg><span>Ovozli sayohatni boshlash</span></button>
+              <label class="check" for="tzVoice"><input id="tzVoice" type="checkbox"><span>Har bir qadamni ovoz bilan o'qish</span></label>
+              <label class="check" for="tzAuto"><input id="tzAuto" type="checkbox" checked><span>Ovoz tugagach keyingi qadamga o'tish</span></label>
+              <p class="field-note voice-note" id="voiceNote"></p>
+            </div>
           </div>
         </aside>
       </div>
@@ -147,6 +153,7 @@
             <select id="labPreset"></select>
           </div>
           <p class="lab-text" id="labText"></p>
+          <button type="button" class="listen" data-listen="lab"><svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z"></path><path class="ico-l" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"></path></svg><span>Tinglash</span></button>
           <div class="field"><label for="labP">P — hozirgi xato <output id="labPOut"></output></label><input id="labP" type="range" min="0" max="35" step="0.5"></div>
           <div class="field"><label for="labI">I — yig'ilgan xato <output id="labIOut"></output></label><input id="labI" type="range" min="0" max="15" step="0.5"></div>
           <div class="field"><label for="labD">D — xato o'zgarishi <output id="labDOut"></output></label><input id="labD" type="range" min="0" max="4" step="0.05"></div>
@@ -521,6 +528,21 @@
     </section>
   </main>
 
+  <div class="player" id="player" role="region" aria-label="Ovozli o'qish" hidden>
+    <button type="button" class="pl-btn" id="plToggle" aria-label="Pauza">
+      <svg class="ico pl-pause" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"></rect><rect x="14" y="5" width="4" height="14" rx="1"></rect></svg>
+      <svg class="ico pl-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5l11 7-11 7z"></path></svg>
+    </button>
+    <div class="pl-info">
+      <span class="pl-title" id="plTitle"></span>
+      <span class="pl-bar"><i id="plProg"></i></span>
+    </div>
+    <button type="button" class="pl-rate" id="plRate" aria-label="Tezlik">1×</button>
+    <button type="button" class="pl-btn" id="plClose" aria-label="To'xtatish">
+      <svg class="ico" viewBox="0 0 24 24" aria-hidden="true"><path class="ico-l" d="M6 6l12 12M18 6L6 18"></path></svg>
+    </button>
+  </div>
+
   <div class="toast" id="toast" role="status" hidden></div>
 
   <script src="vendor/three.min.js"></script>
@@ -531,6 +553,7 @@
   <script src="js/darslik.js"></script>
   <script src="js/pidlab.js"></script>
   <script src="js/drone3d.js"></script>
+  <script src="js/ovoz.js"></script>
   <script src="js/tuzilish.js"></script>
   <script src="js/app.js"></script>
 </body>
