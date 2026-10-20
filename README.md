@@ -2,6 +2,9 @@
 
 O'zbek tilida ovoz bilan boshqariladigan kundalik: **bugun nima qilish kerak** va **qancha pul sarflandi** — ikkalasini ham gapirib yozasiz.
 
+> 🚁 **Yangi: [Dron Logistika Lab](dron/)** — dronlar bilan yetkazib berishni o'rganish uchun
+> simulyator, tajribalar, hisob-kitob va darslar. Batafsil: [dron/README.md](dron/README.md)
+
 ## Nimalar qila oladi
 
 - 🎤 **Ovozli kiritish (o'zbekcha).** Tugmani bosib gapirasiz, dastur aytganingizni yozib, o'zi ajratadi: bu vazifami yoki xarajatmi.
@@ -89,7 +92,8 @@ js/parser.js          — o'zbekcha gapni tahlil qilish (summa, sana, vaqt, toif
 js/app.js             — ilova mantig'i, ovozni tanish, saqlash, eslatmalar
 sw.js                 — oflayn ishlash va bildirishnomalar
 manifest.webmanifest  — telefonga o'rnatish sozlamalari
-tests/                — tahlilchi testlari
+tests/                — tahlilchi va dron simulyatori testlari
+dron/                 — Dron Logistika Lab (alohida ilova)
 android/              — Android ilova (WebView + ovoz tanish, eslatmalar)
 .github/workflows/    — APK'ni avtomatik yig'ish
 ```

@@ -1,0 +1,14 @@
+{
+  "name": "Dron Logistika Lab",
+  "short_name": "Dron Lab",
+  "description": "Dronlar bilan yetkazib berishni o'rganish: simulyator, tajribalar, hisob-kitob va darslar",
+  "lang": "uz",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#edf1f4",
+  "theme_color": "#1c5d99",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
