@@ -5,6 +5,24 @@ Haqiqiy dron kerak emas: hammasi brauzerda, telefon yoki kompyuterda ishlaydi.
 
 ## Bo'limlar
 
+### Tuzilishi — dron qanday tuzilgan va qanday ishlaydi
+- **3D model.** Yetkazish kvadrokopteri (650 mm, 15″ vintlar, 6S batareya) 15 ta qismdan yasalgan:
+  rama, motorlar, vintlar, ESC, quvvat platasi, parvoz kontrolleri, IMU, barometr, GPS va kompas,
+  radio, telemetriya, batareya, kamera, lebyodka, oyoqlar. Barmoq bilan aylantirasiz, qismga bosasiz —
+  vazifasi, ishlash tamoyili, ko'rsatkichlari va buzilsa nima bo'lishi yozma ko'rinishda chiqadi.
+  «Qismlarga ajratish» tugmasi dronni qavatlarga bo'lib ko'rsatadi.
+- **Qanday uchadi.** Pult dastalarini (Mode 2) bosasiz: ko'tarilish, oldinga, yonga, burilish yoki
+  bitta motor to'xtashi. Har bir harakatda qaysi motor tezlashgani, tortish kuchi strelkalari va
+  vint ostidagi havo oqimi ko'rinadi.
+- **Sayohat.** 17 qadamli yozma ekskursiya: har bir qism tartib bilan, energiya yo'li
+  (batareya → plata → ESC → motor) va signal yo'li (radio → kontroller → ESC → motor).
+- **Darslik.** 14 bob: dron turlari, uchish fizikasi, rama, cho'tkasiz motorlar, vintlar, ESC,
+  batareya, parvoz kontrolleri, sensorlar, PID, aloqa, parvoz rejimlari, dron loyihalash, xavfsizlik.
+  Har bobda sxemalar, jadvallar, «Esda tuting» xulosasi va o'zini tekshirish savollari bor.
+- **Parvoz laboratoriyasi.** Dronning bitta o'qi bo'yicha muvozanat simulyatori: P, I va D ni
+  o'zingiz burasiz, shamol zarbasi, doimiy shamol, zaif motor va shovqinli sensorni yoqasiz va
+  grafikda dron qanday javob berishini ko'rasiz.
+
 ### Simulyator
 Shahar xaritasida ombor, dronlar va buyurtmalar. Buyurtmalar tasodifiy tushadi, dispetcher
 ularni dronlarga taqsimlaydi, dronlar taqiqlangan zonalarni aylanib uchadi, batareya sarflaydi
@@ -68,7 +86,14 @@ dron/css/dron.css      — dizayn (kunduzgi va tungi rejim)
 dron/js/model.js       — fizika va iqtisodiyot formulalari
 dron/js/sim.js         — simulyator: buyurtmalar, dispetcher, marshrut, batareya
 dron/js/content.js     — ssenariylar, darslar, test, lug'at
+dron/js/tuzilish-data.js — dron qismlari, sayohat qadamlari, parvoz harakatlari
+dron/js/darslik.js     — darslikning 14 bobi va sxemalari
+dron/js/pidlab.js      — parvoz laboratoriyasi (PID) hisob-kitobi
+dron/js/drone3d.js     — 3D dron modeli (three.js)
+dron/js/tuzilish.js    — «Tuzilishi» bo'limi interfeysi
 dron/js/app.js         — interfeys: xarita, tajriba, hisoblash, darslar
+dron/vendor/           — three.js r128 (MIT litsenziyasi), internetsiz ishlashi uchun
 dron/sw.js             — oflayn ishlash
 tests/dron.test.js     — model va simulyator testlari (npm test)
+tests/tuzilish.test.js — darslik, sayohat, mikser va PID testlari
 ```

@@ -29,6 +29,7 @@
         </div>
       </div>
       <nav class="tabs" role="tablist" aria-label="Bo'limlar">
+        <button class="tab" role="tab" data-tab="tuzilish" id="tabbtn-tuzilish">Tuzilishi</button>
         <button class="tab" role="tab" data-tab="sim" id="tabbtn-sim">Simulyator</button>
         <button class="tab" role="tab" data-tab="tajriba" id="tabbtn-tajriba">Tajriba</button>
         <button class="tab" role="tab" data-tab="hisob" id="tabbtn-hisob">Hisoblash</button>
@@ -38,8 +39,133 @@
   </header>
 
   <main class="wrap">
+    <!-- ================= TUZILISHI ================= -->
+    <section class="view" id="view-tuzilish" role="tabpanel" aria-labelledby="tabbtn-tuzilish" hidden>
+      <div class="tz-head">
+        <div class="page-head">
+          <h1>Dron qanday tuzilgan va qanday ishlaydi</h1>
+          <p class="lead">3D modelda har bir qismni ko'ring, yozma sayohat bilan tartib bo'yicha o'rganing, darslikda chuqurroq o'qing va parvoz laboratoriyasida dron muvozanatini o'zingiz sozlang.</p>
+        </div>
+        <div class="seg seg-lg" id="tzSeg" role="radiogroup" aria-label="Bo'lim">
+          <button data-sub="model" role="radio">3D model</button>
+          <button data-sub="darslik" role="radio">Darslik</button>
+          <button data-sub="lab" role="radio">Parvoz laboratoriyasi</button>
+        </div>
+      </div>
+
+      <div class="tz-model" id="tz-model">
+        <div class="stage" id="stage">
+          <p class="stage-hint" id="stageHint">Suring — aylantirish · ikki barmoq yoki g'ildirak — kattalashtirish · bosing — qismni tanlash</p>
+          <p class="stage-fallback" id="stageFallback" hidden>Bu qurilmada 3D grafika (WebGL) ishlamadi. Darslik va parvoz laboratoriyasi baribir ishlaydi; 3D modelni kompyuterdagi Chrome yoki boshqa yangi brauzerda oching.</p>
+        </div>
+        <aside class="panel tz-side">
+          <div class="seg" id="modeSeg" role="radiogroup" aria-label="Rejim">
+            <button data-mode="parts" role="radio">Qismlar</button>
+            <button data-mode="flight" role="radio">Qanday uchadi</button>
+            <button data-mode="tour" role="radio">Sayohat</button>
+          </div>
+
+          <div id="paneParts" class="pane">
+            <div class="tz-tools">
+              <label class="check" for="tzExplode"><input id="tzExplode" type="checkbox"><span>Qismlarga ajratish</span></label>
+              <label class="check" for="tzLabels"><input id="tzLabels" type="checkbox" checked><span>Nomlar</span></label>
+              <label class="check" for="tzSpin"><input id="tzSpin" type="checkbox"><span>Vintlar aylansin</span></label>
+              <button type="button" class="btn btn-sm" id="tzReset">Ko'rinishni tiklash</button>
+            </div>
+            <div class="part-info" id="partInfo"></div>
+            <div class="part-list" id="partList"></div>
+          </div>
+
+          <div id="paneFlight" class="pane" hidden>
+            <p class="field-note">Pult dastalarini bosing (Mode 2 — eng ko'p tarqalgan tartib). Har bir harakatda qaysi motor tezlashishini kuzating.</p>
+            <div class="sticks">
+              <div class="stick" aria-label="Chap dasta">
+                <span class="stick-name">Chap dasta</span>
+                <button type="button" class="st-up" data-mv="up">Ko'tarilish</button>
+                <button type="button" class="st-left" data-mv="yawL">Chapga burilish</button>
+                <button type="button" class="st-right" data-mv="yawR">O'ngga burilish</button>
+                <button type="button" class="st-down" data-mv="down">Pastlash</button>
+              </div>
+              <div class="stick" aria-label="O'ng dasta">
+                <span class="stick-name">O'ng dasta</span>
+                <button type="button" class="st-up" data-mv="forward">Oldinga</button>
+                <button type="button" class="st-left" data-mv="left">Chapga</button>
+                <button type="button" class="st-right" data-mv="right">O'ngga</button>
+                <button type="button" class="st-down" data-mv="back">Orqaga</button>
+              </div>
+            </div>
+            <div class="mv-row">
+              <button type="button" class="btn" id="mvHover" data-mv="hover">Muallaq turish</button>
+              <button type="button" class="btn danger" id="mvFail" data-mv="fail">Bitta motor to'xtasa</button>
+            </div>
+            <div class="motor-hud" id="motorHud" aria-label="Motorlar (yuqoridan ko'rinish)"></div>
+            <div class="flight-calc" id="flightCalc"></div>
+            <div class="flight-info" id="flightInfo"></div>
+          </div>
+
+          <div id="paneTour" class="pane" hidden>
+            <div class="progress"><div class="progress-bar" id="tourBar"></div></div>
+            <p class="tour-num" id="tourNum"></p>
+            <h3 class="tour-title" id="tourTitle"></h3>
+            <div class="tour-text" id="tourText"></div>
+            <div class="tour-nav">
+              <button type="button" class="btn" id="tourPrev">Oldingisi</button>
+              <button type="button" class="btn primary" id="tourNext">Keyingisi</button>
+            </div>
+            <button type="button" class="link-btn" id="tourRestart">Boshidan boshlash</button>
+          </div>
+        </aside>
+      </div>
+
+      <div class="tz-darslik" id="tz-darslik" hidden>
+        <nav class="panel ch-nav" aria-label="Boblar">
+          <h2>Boblar</h2>
+          <div class="progress"><div class="progress-bar" id="chBar"></div></div>
+          <p class="field-note" id="chProgress"></p>
+          <label class="sr-only" for="chSelect">Bobni tanlash</label>
+          <select id="chSelect" class="ch-select"></select>
+          <ol class="ch-list" id="chList"></ol>
+        </nav>
+        <article class="panel chapter" id="chapter"></article>
+      </div>
+
+      <div class="tz-lab" id="tz-lab" hidden>
+        <div class="panel lab-stage">
+          <canvas id="labCanvas" aria-label="Dron yon tomondan: og'ish burchagi va motor kuchlari"></canvas>
+          <canvas id="labChart" aria-label="Og'ish burchagi grafigi"></canvas>
+          <div class="terms" aria-label="Buyruq tarkibi">
+            <div class="term" id="term-p"><span>P hissasi</span><span class="term-bar"><i></i></span><b></b></div>
+            <div class="term" id="term-i"><span>I hissasi</span><span class="term-bar"><i></i></span><b></b></div>
+            <div class="term" id="term-d"><span>D hissasi</span><span class="term-bar"><i></i></span><b></b></div>
+            <div class="term term-total" id="term-u"><span>Motorlarga buyruq</span><span class="term-bar"><i></i></span><b></b></div>
+          </div>
+        </div>
+        <aside class="panel lab-controls">
+          <h2>Sozlash</h2>
+          <div class="field">
+            <label for="labPreset">Tayyor holat</label>
+            <select id="labPreset"></select>
+          </div>
+          <p class="lab-text" id="labText"></p>
+          <div class="field"><label for="labP">P — hozirgi xato <output id="labPOut"></output></label><input id="labP" type="range" min="0" max="35" step="0.5"></div>
+          <div class="field"><label for="labI">I — yig'ilgan xato <output id="labIOut"></output></label><input id="labI" type="range" min="0" max="15" step="0.5"></div>
+          <div class="field"><label for="labD">D — xato o'zgarishi <output id="labDOut"></output></label><input id="labD" type="range" min="0" max="4" step="0.05"></div>
+          <div class="field"><label for="labTarget">Nishon burchagi <output id="labTargetOut"></output></label><input id="labTarget" type="range" min="-30" max="30" step="1"></div>
+          <div class="mv-row">
+            <button type="button" class="btn" id="labStep">Nishonni almashtirish</button>
+            <button type="button" class="btn" id="labGust">Shamol zarbasi</button>
+            <button type="button" class="btn" id="labReset">Qayta boshlash</button>
+          </div>
+          <label class="check" for="labWind"><input id="labWind" type="checkbox"><span>Doimiy yon shamol</span></label>
+          <label class="check" for="labWeak"><input id="labWeak" type="checkbox"><span>O'ng motor 20% zaif</span></label>
+          <label class="check" for="labNoise"><input id="labNoise" type="checkbox"><span>Shovqinli giroskop</span></label>
+          <p class="field-note">Model: 1,5 kg dron, nurlar 20 sm, motorlar buyruqqa 0,04 s kechikib javob beradi. Bu haqiqiy dronning bitta o'qi (roll) ning soddalashtirilgan nusxasi.</p>
+        </aside>
+      </div>
+    </section>
+
     <!-- ================= SIMULYATOR ================= -->
-    <section class="view" id="view-sim" role="tabpanel" aria-labelledby="tabbtn-sim">
+    <section class="view" id="view-sim" role="tabpanel" aria-labelledby="tabbtn-sim" hidden>
       <div class="sim-grid">
         <div class="sim-main">
           <div class="scenario">
@@ -397,9 +523,15 @@
 
   <div class="toast" id="toast" role="status" hidden></div>
 
+  <script src="vendor/three.min.js"></script>
   <script src="js/model.js"></script>
   <script src="js/sim.js"></script>
   <script src="js/content.js"></script>
+  <script src="js/tuzilish-data.js"></script>
+  <script src="js/darslik.js"></script>
+  <script src="js/pidlab.js"></script>
+  <script src="js/drone3d.js"></script>
+  <script src="js/tuzilish.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

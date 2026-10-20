@@ -53,17 +53,18 @@
 
   // ---------- Bo'limlar ----------
 
-  const TABS = ['sim', 'tajriba', 'hisob', 'organish'];
-  let currentTab = 'sim';
+  const TABS = ['tuzilish', 'sim', 'tajriba', 'hisob', 'organish'];
+  let currentTab = 'tuzilish';
 
   function showTab(name) {
-    if (!TABS.includes(name)) name = 'sim';
+    if (!TABS.includes(name)) name = 'tuzilish';
     currentTab = name;
     TABS.forEach((t) => {
       $('view-' + t).hidden = t !== name;
       $('tabbtn-' + t).setAttribute('aria-selected', String(t === name));
     });
     try { history.replaceState(null, '', '#' + name); } catch (e) { /* ko'rinishga ta'sir qilmaydi */ }
+    document.dispatchEvent(new CustomEvent('dron:tab', { detail: name }));
     if (name === 'sim') resizeMap();
     if (name === 'hisob') renderCalc();
     if (name === 'tajriba') renderExpBase();
@@ -1350,7 +1351,7 @@
   renderQuiz();
   renderReference();
   const startTab = (location.hash || '').slice(1);
-  showTab(TABS.includes(startTab) ? startTab : 'sim');
+  showTab(TABS.includes(startTab) ? startTab : 'tuzilish');
   window.addEventListener('hashchange', () => {
     const t = (location.hash || '').slice(1);
     if (TABS.includes(t) && t !== currentTab) showTab(t);

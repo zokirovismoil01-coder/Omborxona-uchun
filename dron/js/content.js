@@ -113,7 +113,7 @@
   // ---------- Yo'l xaritasi ----------
 
   const ROADMAP = [
-    { title: 'Asoslar', time: '1–2 hafta', text: "Dron turlari, qismlari, uchish fizikasi va batareya. Shu ilovadagi 1–4-darslar va test." },
+    { title: 'Asoslar', time: '1–2 hafta', text: "Dron turlari, qismlari va qanday uchishi. «Tuzilishi» bo'limidagi 3D sayohat, darslikning 14 bobi va parvoz laboratoriyasi, keyin shu yerdagi test." },
     { title: 'Simulyatorda tajriba', time: '2–3 hafta', text: "Har bir ssenariyni o'ynab chiqing. «Tajriba» bo'limida dronlar soni, strategiya va shamolning ta'sirini o'lchang, xulosalarni daftarga yozing." },
     { title: 'Haqiqiy avtopilot dasturlari', time: '1 oy', text: "Kompyuterga QGroundControl va PX4 yoki ArduPilot SITL simulyatorini o'rnating. Dron kerak emas: virtual dronga missiya (marshrut) tuzib, uchiring." },
     { title: 'Dasturlash', time: '1–2 oy', text: "Python asoslari, keyin MAVSDK yoki pymavlink bilan virtual dronni koddan boshqarish. Marshrut uchun Google OR-Tools (VRP) kutubxonasi." },
